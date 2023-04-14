@@ -1,4 +1,4 @@
-const Player = require("../player/model");
+const Customer = require("../customer/model");
 const path = require("path");
 const fs = require("fs");
 const config = require("../../config");
@@ -29,13 +29,13 @@ module.exports = {
 
         src.on("end", async () => {
           try {
-            const player = new Player({ ...payload, avatar: filename });
+            const customer = new Customer({ ...payload, avatar: filename });
 
-            await player.save();
+            await customer.save();
 
-            delete player._doc.password;
+            delete customer._doc.password;
 
-            res.status(201).json({ data: player });
+            res.status(201).json({ data: customer });
           } catch (err) {
             if (err && err.name === "ValidationError") {
               return res.status(422).json({
@@ -48,13 +48,13 @@ module.exports = {
           }
         });
       } else {
-        let player = new Player(payload);
+        let customer = new Customer(payload);
 
-        await player.save();
+        await customer.save();
 
-        delete player._doc.password;
+        delete customer._doc.password;
 
-        res.status(201).json({ data: player });
+        res.status(201).json({ data: customer });
       }
     } catch (err) {
       if (err && err.name === "ValidationError") {
@@ -71,20 +71,20 @@ module.exports = {
   signin: (req, res, next) => {
     const { email, password } = req.body;
 
-    Player.findOne({ email: email })
-      .then((player) => {
-        if (player) {
-          const checkPassword = bcrypt.compareSync(password, player.password);
+    Customer.findOne({ email: email })
+      .then((customer) => {
+        if (customer) {
+          const checkPassword = bcrypt.compareSync(password, customer.password);
           if (checkPassword) {
             const token = jwt.sign(
               {
-                player: {
-                  id: player.id,
-                  username: player.username,
-                  email: player.email,
-                  nama: player.nama,
-                  phoneNumber: player.phoneNumber,
-                  avatar: player.avatar,
+                customer: {
+                  id: customer.id,
+                  username: customer.username,
+                  email: customer.email,
+                  nama: customer.nama,
+                  phoneNumber: customer.phoneNumber,
+                  avatar: customer.avatar,
                 },
               },
               config.jwtKey
