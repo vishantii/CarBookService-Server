@@ -16,6 +16,7 @@ module.exports = {
         category,
         alert,
         name: req.session.user.name,
+        price: req.session.user.price,
         title: "Halaman kategori",
       });
     } catch (err) {
@@ -28,6 +29,7 @@ module.exports = {
     try {
       res.render("admin/category/create", {
         name: req.session.user.name,
+        price: req.session.user.price,
         title: "Halaman tambah kategori",
       });
     } catch (err) {
@@ -39,9 +41,9 @@ module.exports = {
 
   actionCreate: async (req, res) => {
     try {
-      const { name } = req.body;
+      const { name, price } = req.body;
 
-      let category = await Category({ name });
+      let category = await Category({ name, price });
       await category.save();
 
       req.flash("alertMessage", "Berhasil tambah kategori");
@@ -76,13 +78,13 @@ module.exports = {
   actionEdit: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name } = req.body;
+      const { name, price } = req.body;
 
       await Category.findOneAndUpdate(
         {
           _id: id,
         },
-        { name }
+        { name, price }
       );
 
       req.flash("alertMessage", "Berhasil ubah kategori");

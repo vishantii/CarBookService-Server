@@ -1,6 +1,6 @@
 const config = require("../../config");
 const jwt = require("jsonwebtoken");
-const Player = require("../player/model");
+const Customer = require("../customer/model");
 
 module.exports = {
   isLoginAdmin: (req, res, next) => {
@@ -16,7 +16,7 @@ module.exports = {
     }
   },
 
-  isLoginPlayer: async (req, res, next) => {
+  isLoginCustomer: async (req, res, next) => {
     try {
       const token = req.headers.authorization
         ? req.headers.authorization.replace("Bearer ", "")
@@ -24,13 +24,13 @@ module.exports = {
 
       const data = jwt.verify(token, config.jwtKey);
 
-      const player = await Player.findOne({ _id: data.player.id });
+      const customer = await Customer.findOne({ _id: data.customer.id });
 
-      if (!player) {
+      if (!customer) {
         throw new Error();
       }
 
-      req.player = player;
+      req.customer = customer;
       req.token = token;
       next();
     } catch (err) {

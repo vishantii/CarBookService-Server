@@ -1,6 +1,5 @@
-<%- include ../../partials/header.ejs %>
-<%- include ../../partials/navbar.ejs %>
-<%- include ../../partials/sidebar.ejs %>
+<%- include ../../partials/header.ejs %> <%- include ../../partials/navbar.ejs
+%> <%- include ../../partials/sidebar.ejs %>
 <div class="content-wrapper">
   <!-- Content Header (Page header) -->
   <section class="content-header">
@@ -17,7 +16,8 @@
           </ol>
         </div>
       </div>
-    </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.container-fluid -->
   </section>
 
   <!-- Main content -->
@@ -26,11 +26,15 @@
       <div class="row">
         <div class="col-12">
           <div class="card">
-           
-            <!-- /.card-header -->
-            <div class="card-body">
-              <%- include ./table.ejs %>
+            <div class="p-4">
+              <form action="/transaction" method="GET">
+                <label for="date">Choose a date:</label>
+                <input type="date" id="date" name="date" required />
+                <button type="submit">Filter</button>
+              </form>
             </div>
+            <!-- /.card-header -->
+            <div class="card-body"><%- include ./table.ejs %></div>
             <!-- /.card-body -->
           </div>
           <!-- /.card -->
@@ -45,5 +49,4 @@
   <!-- /.content -->
 </div>
 
-<%- include ../../partials/footer.ejs %>
-<%- include ../../partials/js.ejs %>
+<%- include ../../partials/footer.ejs %> <%- include ../../partials/js.ejs %>
