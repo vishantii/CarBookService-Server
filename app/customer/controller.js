@@ -1,4 +1,5 @@
 const Transaction = require("../transaction/model");
+const Schedule = require("../schedule/model");
 const Category = require("../category/model");
 const config = require("../../config");
 const Customer = require("./model");
@@ -15,6 +16,51 @@ module.exports = {
       res.status(500).json({ message: err.message || `Internal server error` });
     }
   },
+  categoryById: async (req, res) => {
+    const { id } = req.body;
+    try {
+      const category = await Category.find({ _id: id });
+
+      res.status(200).json({ data: category });
+    } catch (err) {
+      res.status(500).json({ message: err.message || `Internal server error` });
+    }
+  },
+  cancelTransaction: async (req, res) => {
+    const { id } = req.body;
+    try {
+      const transaction = await Transaction.findByIdAndDelete({ _id: id });
+
+      res.status(200).json({ data: transaction });
+    } catch (err) {
+      res.status(500).json({ message: err.message || `Internal server error` });
+    }
+  },
+
+  updateTimeAvailability: async (req, res) => {
+    try {
+      const date = new Date(req.body.date);
+      const time = req.body.time;
+      Schedule.findOneAndUpdate(
+        { date: date, "times.time": time },
+        { $set: { "times.$.available": false } }
+      )
+        .then((result) => {
+          console.log(`Updated ${result.nModified} documents`);
+          if (result.nModified === 0) {
+            res.sendStatus(404);
+          } else {
+            res.sendStatus(200);
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          res.sendStatus(500);
+        });
+    } catch (error) {
+      res.status(500);
+    }
+  },
 
   checkout: async (req, res) => {
     try {
@@ -27,25 +73,31 @@ module.exports = {
         chooseDate,
         chooseTime,
         notes,
+        category,
       } = req.body;
+      const timestamp = Date.now();
+      const randomNum = Math.floor(Math.random() * 1000000) + 1;
+      const bookingNum = timestamp + randomNum;
 
       const payload = {
         carBrand: carBrand,
         carType: carType,
         carYear: carYear,
+        category: category,
         miles: miles,
         licensePlate: licensePlate,
         chooseDate: chooseDate,
         chooseTime: chooseTime,
         notes: notes,
         userId: req.customer._id,
+        bookingNumber: bookingNum,
       };
 
       const transaction = new Transaction(payload);
 
       await transaction.save();
 
-      res.status(201).json({
+      res.status(200).json({
         data: transaction,
       });
     } catch (err) {
@@ -87,6 +139,36 @@ module.exports = {
     } catch (err) {
       res.status(500).json({ message: err.message || `Internal server error` });
     }
+  },
+
+  updateStatusTransaction: async (req, res) => {
+    const transactionId = req.params.id;
+    const newStatus = req.body.status;
+
+    Transaction.findById(transactionId)
+      .then((transaction) => {
+        if (!transaction) {
+          res.status(404).send({ message: "Transaction not found" });
+        } else {
+          transaction.status = newStatus;
+          transaction
+            .save()
+            .then((result) => {
+              console.log(
+                `Updated status of transaction with ID ${result._id}`
+              );
+              res.send(result);
+            })
+            .catch((error) => {
+              console.error(error);
+              res.status(500);
+            });
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        res.status(500);
+      });
   },
 
   profile: async (req, res) => {

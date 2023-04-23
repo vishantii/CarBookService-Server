@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 let transactionSchema = mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
     carBrand: {
       type: String,
       require: [true, "Merk mobil harus diisi"],
@@ -23,7 +23,11 @@ let transactionSchema = mongoose.Schema(
       type: String,
       require: [true, "Plat nomor mobil harus diisi"],
     },
-    category: { type: mongoose.Schema.Types.ObjectId, required: true },
+    category: {
+      id: { type: mongoose.Schema.Types.ObjectId, required: true },
+      name: { type: String, required: true },
+      price: { type: String, required: true },
+    },
     chooseDate: {
       type: String,
       require: [true, "Tanggal servis harus diisi"],
@@ -36,10 +40,13 @@ let transactionSchema = mongoose.Schema(
       type: String,
       require: [true, "Keluhan harus diisi"],
     },
+    bookingNumber: {
+      type: Number,
+    },
     status: {
-      type: String,
-      enum: ["menunggu_status", "konfirmasi_checkin", "konfirmasi_checkout"],
-      default: "menunggu_status",
+      type: Number,
+      enum: [0, 1, 2, 3],
+      default: 0,
     },
   },
   { timestamps: true }

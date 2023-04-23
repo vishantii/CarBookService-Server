@@ -6,6 +6,10 @@ let categorySchema = mongoose.Schema(
       type: String,
       require: [true, "Nama kategori harus diiisi"],
     },
+    price: {
+      type: String,
+      require: [true, "Harga harus diiisi"],
+    },
   },
   { timestamps: true }
 );
