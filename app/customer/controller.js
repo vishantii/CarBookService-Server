@@ -1,10 +1,13 @@
 const Transaction = require("../transaction/model");
 const Schedule = require("../schedule/model");
 const Category = require("../category/model");
+const Sparepart = require("../sparepart/model");
 const config = require("../../config");
 const Customer = require("./model");
 const path = require("path");
 const fs = require("fs");
+const mongoose = require("mongoose");
+const { createInvoice } = require("../../Utils/Invoice/createInvoice");
 
 module.exports = {
   category: async (req, res) => {
@@ -12,6 +15,15 @@ module.exports = {
       const category = await Category.find();
 
       res.status(200).json({ data: category });
+    } catch (err) {
+      res.status(500).json({ message: err.message || `Internal server error` });
+    }
+  },
+  spareparts: async (req, res) => {
+    try {
+      const sparepart = await Sparepart.find();
+
+      res.status(200).json({ data: sparepart });
     } catch (err) {
       res.status(500).json({ message: err.message || `Internal server error` });
     }
@@ -74,11 +86,14 @@ module.exports = {
         chooseTime,
         notes,
         category,
+        spareparts,
+        total,
       } = req.body;
       const timestamp = Date.now();
       const randomNum = Math.floor(Math.random() * 1000000) + 1;
       const bookingNum = timestamp + randomNum;
 
+      // Update the payload to include an array of objects for each sparepart
       const payload = {
         carBrand: carBrand,
         carType: carType,
@@ -91,9 +106,31 @@ module.exports = {
         notes: notes,
         userId: req.customer._id,
         bookingNumber: bookingNum,
+        total: total,
+        spareparts: spareparts.map((sparepart) => ({
+          sparepartId: mongoose.Types.ObjectId(sparepart.sparepartId),
+          quantity: sparepart.quantity,
+        })),
       };
 
       const transaction = new Transaction(payload);
+
+      // Update the quantity of each sparepart in the database
+      for (const sparepart of spareparts) {
+        if (sparepart && sparepart.sparepartId && sparepart.quantity) {
+          // Check if sparepart object is defined and has sparepartId and quantity properties
+          const foundSparepart = await Sparepart.findById(
+            sparepart.sparepartId
+          );
+          if (!foundSparepart) {
+            throw new Error(
+              `Sparepart with id ${sparepart.sparepartId} not found`
+            );
+          }
+          foundSparepart.stock -= sparepart.quantity;
+          await foundSparepart.save();
+        }
+      }
 
       await transaction.save();
 
@@ -102,6 +139,47 @@ module.exports = {
       });
     } catch (err) {
       res.status(500).json({ message: err.message || `Internal server error` });
+    }
+  },
+
+  updateSchedule: async (req, res) => {
+    const { id } = req.params;
+    const { date, time } = req.body;
+
+    try {
+      const transaction = await Transaction.findById(id);
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+
+      const availability = await Schedule.findOne({ date });
+      if (!availability) {
+        return res.status(404).json({ message: "Availability not found" });
+      }
+
+      const timeSlot = availability.times.find((t) => t.time === time);
+      if (!timeSlot || !timeSlot.available) {
+        return res.status(400).json({ message: "Time slot not available" });
+      }
+
+      const oldTimeSlot = availability.times.find(
+        (t) => t.time === transaction.chooseTime
+      );
+      if (oldTimeSlot) {
+        oldTimeSlot.available = true;
+        await availability.save();
+      }
+
+      timeSlot.available = false;
+      await availability.save();
+
+      transaction.chooseDate = date;
+      transaction.chooseTime = time;
+      await transaction.save();
+
+      res.json({ message: "Date and time updated successfully" });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
     }
   },
 
@@ -130,7 +208,9 @@ module.exports = {
     try {
       const { id } = req.params;
 
-      const history = await Transaction.findOne({ _id: id });
+      const history = await Transaction.findOne({ _id: id })
+        .populate("spareparts.sparepartId")
+        .populate("userId");
 
       if (!history)
         return res.status(404).json({ message: "history tidak ditemukan." });
@@ -157,11 +237,38 @@ module.exports = {
               console.log(
                 `Updated status of transaction with ID ${result._id}`
               );
-              res.send(result);
+
+              if (newStatus === 4) {
+                Schedule.findOne({ date: new Date(transaction.chooseDate) })
+                  .then((schedule) => {
+                    const time = schedule.times.find(
+                      (t) => t.time === transaction.chooseTime
+                    );
+                    time.available = true;
+                    schedule
+                      .save()
+                      .then(() => {
+                        console.log(
+                          `Updated availability for ${transaction.chooseDate} ${transaction.chooseTime}`
+                        );
+                        res.send(result);
+                      })
+                      .catch((error) => {
+                        console.error(error);
+                        res.status(500);
+                      });
+                  })
+                  .catch((error) => {
+                    console.error(error);
+                    res.status(500);
+                  });
+              } else {
+                res.send(result);
+              }
             })
             .catch((error) => {
               console.error(error);
-              res.status(500);
+              res.sendStatus(500);
             });
         }
       })
@@ -275,5 +382,33 @@ module.exports = {
         });
       }
     }
+  },
+  invoice: async (req, res) => {
+    // Get the transaction details from the request
+    const transaction = req.body;
+
+    // Generate a unique name for the invoice
+    const date = new Date();
+    const fileName = `invoice_${date.getTime()}.pdf`;
+    const directoryPath = "Utils/Invoice/files";
+
+    // Generate the invoice and get the file path
+    const invoicePath = await createInvoice(
+      transaction,
+      directoryPath,
+      fileName
+    );
+    res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+
+    // Send the file to the client for download
+    res.download(invoicePath, fileName, (err) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send("Error downloading file");
+      }
+
+      // Delete the file after it has been sent
+      fs.unlinkSync(invoicePath);
+    });
   },
 };

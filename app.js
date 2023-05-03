@@ -10,8 +10,7 @@ var cors = require("cors");
 
 const dashboardRouter = require("./app/dashboard/router");
 const categoryRouter = require("./app/category/router");
-const bankRouter = require("./app/bank/router");
-const paymentRouter = require("./app/payment/router");
+const sparepartRouter = require("./app/sparepart/router");
 const usersRouter = require("./app/users/router");
 const transactionRouter = require("./app/transaction/router");
 const customerRouter = require("./app/customer/router");
@@ -49,8 +48,7 @@ app.use(
 app.use("/", usersRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/category", categoryRouter);
-app.use("/bank", bankRouter);
-app.use("/payment", paymentRouter);
+app.use("/sparepart", sparepartRouter);
 app.use("/transaction", transactionRouter);
 
 // api

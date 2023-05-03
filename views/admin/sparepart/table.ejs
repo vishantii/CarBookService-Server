@@ -1,0 +1,61 @@
+<table id="example2" class="table table-bordered table-hover">
+  <thead>
+    <tr>
+      <th>No.</th>
+      <th>ID Sparepart</th>
+      <th>Nama Sparepart</th>
+      <th>Harga</th>
+      <th>Stock</th>
+      <th>status</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% for(let i = 0; i < sparepart.length; i++){ %>
+    <tr>
+      <td><%= i + 1 %></td>
+      <td><%= sparepart[i]._id %></td>
+      <td><%= sparepart[i].name %></td>
+      <td><%= sparepart[i].price %></td>
+      <td><%= sparepart[i].stock %></td>
+      <td>
+        <% if(sparepart[i].status === 'Y'){ %>
+        <span class="badge badge-success btn-sm"> Active </span>
+        <% } else { %>
+        <span class="badge badge-danger btn-sm"> Not Active </span>
+        <% } %>
+      </td>
+      <td>
+        <form
+          action="/sparepart/status/<%= sparepart[i]._id %>?_method=PUT"
+          method="POST"
+          style="display: inline-block"
+        >
+          <button class="btn btn-primary btn-sm">
+            <i class="fas fa-folder"></i>
+            <% if(sparepart[i].status === 'Y') { %> Matikan <% } else { %>
+            Hidupkan <% } %>
+          </button>
+        </form>
+        <a
+          href="/sparepart/edit/<%= sparepart[i]._id %>"
+          class="btn btn-info btn-sm"
+        >
+          <i class="fas fa-pencil-alt"></i>
+          Ubah
+        </a>
+        <form
+          action="/sparepart/delete/<%= sparepart[i]._id %>?_method=DELETE"
+          method="POST"
+          style="display: inline-block"
+        >
+          <button class="btn btn-danger btn-sm">
+            <i class="fas fa-trash"></i>
+            Hapus
+          </button>
+        </form>
+      </td>
+    </tr>
+    <% } %>
+  </tbody>
+</table>

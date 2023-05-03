@@ -9,6 +9,20 @@ module.exports = {
 
         // If availability data is found, return it
         if (availability) {
+          // Loop through each time slot and set the available property to false if the time has passed
+          availability.times.forEach((time) => {
+            const timeDate = new Date(`${date.toDateString()} ${time.time}`);
+            if (
+              timeDate < new Date() ||
+              timeDate.getHours() === new Date().getHours()
+            ) {
+              time.available = false;
+            }
+          });
+
+          // Update the availability data in the database
+          await Schedule.updateOne({ date }, { times: availability.times });
+
           return availability.times;
         }
 
@@ -21,6 +35,17 @@ module.exports = {
           { time: "02:00 PM", available: true },
           { time: "03:00 PM", available: true },
         ];
+
+        // Loop through each time slot and set the available property to false if the time has passed
+        times.forEach((time) => {
+          const timeDate = new Date(`${date.toDateString()} ${time.time}`);
+          if (
+            timeDate < new Date() ||
+            timeDate.getHours() === new Date().getHours()
+          ) {
+            time.available = false;
+          }
+        });
 
         // Save the dynamically generated availability data to the database
         await Schedule.create({ date, times });

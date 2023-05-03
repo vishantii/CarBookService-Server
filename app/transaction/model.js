@@ -43,9 +43,20 @@ let transactionSchema = mongoose.Schema(
     bookingNumber: {
       type: Number,
     },
+    total: {
+      type: Number,
+    },
+    spareparts: [
+      {
+        sparepartId: { type: mongoose.Schema.Types.ObjectId, ref: "Sparepart" },
+        name: { type: String },
+        price: { type: String },
+        quantity: { type: Number, required: true, default: 1 },
+      },
+    ],
     status: {
       type: Number,
-      enum: [0, 1, 2, 3],
+      enum: [0, 1, 2, 3, 4],
       default: 0,
     },
   },

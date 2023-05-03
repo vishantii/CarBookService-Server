@@ -1,57 +1,74 @@
-const Payment = require("./model");
-const Bank = require("../bank/model");
+const Sparepart = require("./model");
 
 module.exports = {
   index: async (req, res) => {
     try {
       const alertMessage = req.flash("alertMessage");
       const alertStatus = req.flash("alertStatus");
+      const { id } = req.query;
 
       const alert = { message: alertMessage, status: alertStatus };
-      const payment = await Payment.find().populate("banks");
+      let sparepart;
 
-      res.render("admin/payment/view_payment", {
-        payment,
+      if (id) {
+        sparepart = await Sparepart.find({ _id: id });
+      } else {
+        sparepart = await Sparepart.find();
+      }
+
+      // check if stock is 0, and set the status to N
+      for (const part of sparepart) {
+        if (part.stock === 0) {
+          part.status = "N";
+          await part.save();
+        }
+      }
+
+      res.render("admin/sparepart/view_sparepart", {
+        sparepart,
         alert,
         name: req.session.user.name,
-        title: "Halaman metode pembayaran",
+        price: req.session.user.price,
+        stock: req.session.user.stock, // fix typo
+        title: "Halaman Sparepart",
       });
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     }
   },
+
   viewCreate: async (req, res) => {
     try {
-      const banks = await Bank.find();
-      res.render("admin/payment/create", {
-        banks,
+      res.render("admin/sparepart/create", {
         name: req.session.user.name,
-        title: "Halaman tambah metode pembayaran",
+        price: req.session.user.price,
+        price: req.session.user.stock,
+        title: "Halaman tambah sparepart",
       });
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     }
   },
 
   actionCreate: async (req, res) => {
     try {
-      const { banks, type } = req.body;
+      const { name, price, stock } = req.body;
 
-      let payment = await Payment({ banks, type });
-      await payment.save();
+      let sparepart = await Sparepart({ name, price, stock });
+      await sparepart.save();
 
-      req.flash("alertMessage", "Berhasil tambah payment");
+      req.flash("alertMessage", "Berhasil tambah sparepart");
       req.flash("alertStatus", "success");
 
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     }
   },
 
@@ -59,42 +76,42 @@ module.exports = {
     try {
       const { id } = req.params;
 
-      const payment = await Payment.findOne({ _id: id }).populate("banks");
-      const banks = await Bank.find();
+      const sparepart = await Sparepart.findOne({ _id: id });
 
-      res.render("admin/payment/edit", {
-        payment,
-        banks,
+      res.render("admin/sparepart/edit", {
+        sparepart,
         name: req.session.user.name,
-        title: "Halaman ubah metode pembayaran",
+        price: req.session.user.price,
+        price: req.session.user.stock,
+        title: "Halaman ubah sparepart",
       });
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     }
   },
 
   actionEdit: async (req, res) => {
     try {
       const { id } = req.params;
-      const { banks, type } = req.body;
+      const { name, price, stock } = req.body;
 
-      await Payment.findOneAndUpdate(
+      await Sparepart.findOneAndUpdate(
         {
           _id: id,
         },
-        { banks, type }
+        { name, price, stock }
       );
 
-      req.flash("alertMessage", "Berhasil ubah payment");
+      req.flash("alertMessage", "Berhasil ubah sparepart");
       req.flash("alertStatus", "success");
 
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     }
   },
 
@@ -102,28 +119,28 @@ module.exports = {
     try {
       const { id } = req.params;
 
-      await Payment.findOneAndRemove({
+      await Sparepart.findOneAndRemove({
         _id: id,
       });
 
-      req.flash("alertMessage", "Berhasil hapus payment");
+      req.flash("alertMessage", "Berhasil hapus sparepart");
       req.flash("alertStatus", "success");
 
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     }
   },
   actionStatus: async (req, res) => {
     try {
       const { id } = req.params;
-      let payment = await Payment.findOne({ _id: id });
+      let sparepart = await Sparepart.findOne({ _id: id });
 
-      let status = payment.status === "Y" ? "N" : "Y";
+      let status = sparepart.status === "Y" ? "N" : "Y";
 
-      payment = await Payment.findOneAndUpdate(
+      sparepart = await Sparepart.findOneAndUpdate(
         {
           _id: id,
         },
@@ -133,11 +150,11 @@ module.exports = {
       req.flash("alertMessage", "Berhasil ubah status");
       req.flash("alertStatus", "success");
 
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/payment");
+      res.redirect("/sparepart");
     }
   },
 };
