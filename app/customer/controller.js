@@ -177,10 +177,7 @@ module.exports = {
   checkout: async (req, res) => {
     try {
       const {
-        // cars,
-        carBrand,
-        carType,
-        carYear,
+        cars,
         miles,
         licensePlate,
         chooseDate,
@@ -196,7 +193,7 @@ module.exports = {
 
       // Update the payload to include an array of objects for each sparepart
       const payload = {
-        // cars: cars,
+        cars: cars,
         carBrand: carBrand,
         carType: carType,
         carYear: carYear,
