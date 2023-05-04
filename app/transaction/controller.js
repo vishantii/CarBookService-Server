@@ -108,16 +108,16 @@ module.exports = {
 
       const flattenedTransactions = sortedTransactions.flat();
 
-      res.render("admin/transaction/view_transaction", {
+      res.render("admin/secondtransaction/view_transaction", {
         transaction: flattenedTransactions,
         alert,
         name: req.session.user.name,
-        title: "Halaman Transaksi",
+        title: "Halaman Transaksi Servis Berat",
       });
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/transaction");
+      res.redirect("/transaction/second");
     }
   },
 
