@@ -14,18 +14,29 @@ const {
   spareparts,
   updateSchedule,
   invoice,
+  carmake,
+  carById,
+  index,
+  viewEdit,
+  actionEdit,
+  actionDelete,
 } = require("./controller");
 
 const { isLoginCustomer } = require("../middleware/auth");
 const multer = require("multer");
 const os = require("os");
-
+router.get("/", index);
+router.get("/edit/:id", viewEdit);
+router.put("/edit/:id", actionEdit);
+router.delete("/delete/:id", actionDelete);
 router.get("/category", category);
 router.get("/sparepart", spareparts);
+router.get("/carmake", carmake);
 router.put("/timeslots", updateTimeAvailability);
 router.put("/transactions/:id", isLoginCustomer, updateStatusTransaction);
 router.post("/checkout", isLoginCustomer, checkout);
 router.post("/category/byId", isLoginCustomer, categoryById);
+router.post("/carmake/byId", isLoginCustomer, carById);
 router.post(
   "/transactions/:id/change-date-time",
   isLoginCustomer,

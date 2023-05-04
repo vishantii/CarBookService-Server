@@ -16,6 +16,7 @@ const transactionRouter = require("./app/transaction/router");
 const customerRouter = require("./app/customer/router");
 const authRouter = require("./app/auth/router");
 const scheduleRouter = require("./app/schedule/router");
+const carMakeRouter = require("./app/carmake/router");
 
 const app = express();
 const URL = `/api/v1`;
@@ -48,8 +49,10 @@ app.use(
 app.use("/", usersRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/category", categoryRouter);
+app.use("/carmake", carMakeRouter);
 app.use("/sparepart", sparepartRouter);
 app.use("/transaction", transactionRouter);
+app.use("/customer", customerRouter);
 
 // api
 app.use(`${URL}/schedule`, scheduleRouter);

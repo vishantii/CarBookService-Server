@@ -49,7 +49,6 @@ module.exports = {
 
       const flattenedTransactions = sortedTransactions.flat();
 
-      console.log("trans-->", JSON.stringify(flattenedTransactions));
       res.render("admin/transaction/view_transaction", {
         transaction: flattenedTransactions,
         alert,
@@ -109,7 +108,6 @@ module.exports = {
 
       const flattenedTransactions = sortedTransactions.flat();
 
-      console.log("trans-->", JSON.stringify(flattenedTransactions));
       res.render("admin/transaction/view_transaction", {
         transaction: flattenedTransactions,
         alert,
@@ -137,7 +135,6 @@ module.exports = {
         const availability = await Schedule.findOne({ date });
         if (availability) {
           const timeIndex = availability.times.findIndex((t) => t.time == time);
-          console.log("timeIndex-->", timeIndex);
           if (timeIndex >= 0) {
             availability.times[timeIndex].available = true;
             await availability.save();

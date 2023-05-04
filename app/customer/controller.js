@@ -2,6 +2,7 @@ const Transaction = require("../transaction/model");
 const Schedule = require("../schedule/model");
 const Category = require("../category/model");
 const Sparepart = require("../sparepart/model");
+const Carmake = require("../carmake/model");
 const config = require("../../config");
 const Customer = require("./model");
 const path = require("path");
@@ -10,6 +11,85 @@ const mongoose = require("mongoose");
 const { createInvoice } = require("../../Utils/Invoice/createInvoice");
 
 module.exports = {
+  index: async (req, res) => {
+    try {
+      const alertMessage = req.flash("alertMessage");
+      const alertStatus = req.flash("alertStatus");
+
+      const alert = { message: alertMessage, status: alertStatus };
+      const customer = await Customer.find();
+
+      res.render("admin/customer/view_customer", {
+        customer,
+        alert,
+        name: req.session.user.name,
+        title: "Halaman customer",
+      });
+    } catch (err) {
+      req.flash("alertMessage", `${err.message}`);
+      req.flash("alertStatus", "danger");
+      res.redirect("/customer");
+    }
+  },
+  viewEdit: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const customer = await Customer.findOne({ _id: id });
+
+      res.render("admin/customer/edit", {
+        customer,
+        name: req.session.user.name,
+        title: "Halaman ubah customer",
+      });
+    } catch (err) {
+      req.flash("alertMessage", `${err.message}`);
+      req.flash("alertStatus", "danger");
+      res.redirect("/customer");
+    }
+  },
+
+  actionEdit: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, email } = req.body;
+
+      await Customer.findOneAndUpdate(
+        {
+          _id: id,
+        },
+        { name, email }
+      );
+
+      req.flash("alertMessage", "Berhasil ubah customer");
+      req.flash("alertStatus", "success");
+
+      res.redirect("/customer");
+    } catch (err) {
+      req.flash("alertMessage", `${err.message}`);
+      req.flash("alertStatus", "danger");
+      res.redirect("/customer");
+    }
+  },
+
+  actionDelete: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      await Customer.findOneAndRemove({
+        _id: id,
+      });
+
+      req.flash("alertMessage", "Berhasil hapus kategori");
+      req.flash("alertStatus", "success");
+
+      res.redirect("/customer");
+    } catch (err) {
+      req.flash("alertMessage", `${err.message}`);
+      req.flash("alertStatus", "danger");
+      res.redirect("/customer");
+    }
+  },
   category: async (req, res) => {
     try {
       const category = await Category.find();
@@ -28,12 +108,32 @@ module.exports = {
       res.status(500).json({ message: err.message || `Internal server error` });
     }
   },
+  carmake: async (req, res) => {
+    try {
+      const cars = await Carmake.find();
+      return res.json({ data: cars });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
   categoryById: async (req, res) => {
     const { id } = req.body;
     try {
       const category = await Category.find({ _id: id });
 
       res.status(200).json({ data: category });
+    } catch (err) {
+      res.status(500).json({ message: err.message || `Internal server error` });
+    }
+  },
+  carById: async (req, res) => {
+    const { id } = req.body;
+    try {
+      const cars = await Carmake.find({ _id: id });
+
+      res.status(200).json({ data: cars });
     } catch (err) {
       res.status(500).json({ message: err.message || `Internal server error` });
     }
@@ -77,6 +177,7 @@ module.exports = {
   checkout: async (req, res) => {
     try {
       const {
+        // cars,
         carBrand,
         carType,
         carYear,
@@ -95,6 +196,7 @@ module.exports = {
 
       // Update the payload to include an array of objects for each sparepart
       const payload = {
+        // cars: cars,
         carBrand: carBrand,
         carType: carType,
         carYear: carYear,

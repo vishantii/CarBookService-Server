@@ -28,6 +28,13 @@ let transactionSchema = mongoose.Schema(
       name: { type: String, required: true },
       price: { type: String, required: true },
     },
+    // cars: {
+    //   id: { type: mongoose.Schema.Types.ObjectId, required: true },
+    //   make: { type: String, required: true },
+    //   model: { type: String, required: true },
+    //   category: { type: String, required: true },
+    //   year: { type: String, required: true },
+    // },
     chooseDate: {
       type: String,
       require: [true, "Tanggal servis harus diisi"],
