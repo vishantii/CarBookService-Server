@@ -16,6 +16,12 @@ let customerSchema = mongoose.Schema(
       maxlength: [225, "panjang nama harus antara 3 - 225 karakter"],
       minlength: [3, "panjang nama harus antara 3 - 225 karakter"],
     },
+    address: {
+      type: String,
+      require: [true, "alamat harus diisi"],
+      maxlength: [225, "panjang alamat harus antara 3 - 225 karakter"],
+      minlength: [3, "panjang alamat harus antara 3 - 225 karakter"],
+    },
     username: {
       type: String,
       require: [true, "nama harus diisi"],
