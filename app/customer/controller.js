@@ -194,9 +194,6 @@ module.exports = {
       // Update the payload to include an array of objects for each sparepart
       const payload = {
         cars: cars,
-        carBrand: carBrand,
-        carType: carType,
-        carYear: carYear,
         category: category,
         miles: miles,
         licensePlate: licensePlate,
