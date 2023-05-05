@@ -25,8 +25,8 @@
       <td><%= transaction[i]?.userId?.name %></td>
       <td><%= transaction[i]?.userId?.phoneNumber %></td>
       <td><%= transaction[i]?.bookingNumber %></td>
-      <td><%= transaction[i]?.carBrand %></td>
-      <td><%= transaction[i]?.carType %></td>
+      <td><%= transaction[i]?.cars?.make %></td>
+      <td><%= transaction[i]?.cars.model %></td>
       <td><%= transaction[i]?.licensePlate %></td>
       <td>
         <% for (let j = 0; j < transaction[i].spareparts.length; j++) { %>
