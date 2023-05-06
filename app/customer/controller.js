@@ -10,6 +10,27 @@ const fs = require("fs");
 const mongoose = require("mongoose");
 const { createInvoice } = require("../../Utils/Invoice/createInvoice");
 
+const deleteUserAndTransaction = async (userId, transactionId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    // Delete the user
+    await Customer.findOneAndRemove({ _id: userId }).session(session);
+
+    // Delete the transaction
+    await Transaction.findOneAndRemove({ _id: transactionId }).session(session);
+
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+  } catch (error) {
+    // If any error occurs, abort the transaction and throw the error
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
 module.exports = {
   index: async (req, res) => {
     try {
@@ -76,13 +97,52 @@ module.exports = {
     try {
       const { id } = req.params;
 
-      await Customer.findOneAndRemove({
-        _id: id,
+      // Step 1: Check if user has any transactions with status 3
+      const transaction = await Transaction.findOne({
+        userId: id,
+        status: 3,
       });
+
+      if (transaction) {
+        await Transaction.findByIdAndDelete(transaction._id);
+        req.flash("alertMessage", "Berhasil hapus kategori");
+        req.flash("alertStatus", "success");
+        return res.redirect("/customer");
+      }
+
+      // Step 2: Find user and their transactions
+      const user = await Customer.findById(id);
+      const transactions = await Transaction.find({ userId: id });
+
+      // Step 3: Reset spare part stock and time availability for each transaction
+      for (const transaction of transactions) {
+        if (transaction.status !== 3) {
+          for (const sparepart of transaction.spareparts) {
+            const originalSparepart = await Sparepart.findById(
+              sparepart.sparepartId
+            );
+            originalSparepart.stock += sparepart.quantity;
+            await originalSparepart.save();
+          }
+          const schedule = await Schedule.findOne({
+            date: transaction.chooseDate,
+          });
+          const selectedTime = schedule.times.find(
+            (time) => time.time === transaction.chooseTime
+          );
+          selectedTime.available = true;
+          await schedule.save();
+        }
+      }
+
+      // Step 4: Delete transactions
+      await Transaction.deleteMany({ userId: id });
+
+      // Step 5: Delete user
+      await Customer.findByIdAndDelete(id);
 
       req.flash("alertMessage", "Berhasil hapus kategori");
       req.flash("alertStatus", "success");
-
       res.redirect("/customer");
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
@@ -90,6 +150,7 @@ module.exports = {
       res.redirect("/customer");
     }
   },
+
   category: async (req, res) => {
     try {
       const category = await Category.find();
@@ -391,94 +452,57 @@ module.exports = {
     }
   },
 
-  editProfile: async (req, res, next) => {
+  editProfile: async (req, res) => {
     try {
-      const { name = "", phoneNumber = "" } = req.body;
+      const { name, address, phoneNumber } = req.body;
 
-      const payload = {};
+      // Update payload
+      const updatePayload = {};
+      if (name) updatePayload.name = name;
+      if (address) updatePayload.address = address;
+      if (phoneNumber) updatePayload.phoneNumber = phoneNumber;
 
-      if (name.length) payload.name = name;
-      if (phoneNumber.length) payload.phoneNumber = phoneNumber;
-
+      // Check if the user uploaded a new avatar file
       if (req.file) {
-        let tmp_path = req.file.path;
-        let originaExt =
-          req.file.originalname.split(".")[
-            req.file.originalname.split(".").length - 1
-          ];
-        let filename = req.file.filename + "." + originaExt;
-        let target_path = path.resolve(
-          config.rootPath,
-          `public/uploads/${filename}`
-        );
-
-        const src = fs.createReadStream(tmp_path);
-        const dest = fs.createWriteStream(target_path);
-
-        src.pipe(dest);
-
-        src.on("end", async () => {
-          let customer = await Customer.findOne({ _id: req.customer._id });
-
-          let currentImage = `${config.rootPath}/public/uploads/${customer.avatar}`;
-          if (fs.existsSync(currentImage)) {
-            fs.unlinkSync(currentImage);
-          }
-
-          customer = await Customer.findOneAndUpdate(
-            {
-              _id: req.customer._id,
-            },
-            {
-              ...payload,
-              avatar: filename,
-            },
-            { new: true, runValidators: true }
-          );
-
-          console.log(customer);
-
-          res.status(201).json({
-            data: {
-              id: customer.id,
-              name: customer.name,
-              phoneNumber: customer.phoneNumber,
-              avatar: customer.avatar,
-            },
-          });
-        });
-
-        src.on("err", async () => {
-          next(err);
-        });
-      } else {
-        const customer = await Customer.findOneAndUpdate(
-          {
-            _id: req.customer._id,
-          },
-          payload,
-          { new: true, runValidators: true }
-        );
-
-        res.status(201).json({
-          data: {
-            id: customer.id,
-            name: customer.name,
-            phoneNumber: customer.phoneNumber,
-            avatar: customer.avatar,
-          },
-        });
+        updatePayload.avatar = req.file.filename;
       }
-    } catch (err) {
-      if (err && err.name === "ValidationError") {
-        res.status(422).json({
+
+      // Update user profile
+      const updatedCustomer = await Customer.findByIdAndUpdate(
+        req.customer._id,
+        updatePayload,
+        { new: true, runValidators: true }
+      );
+
+      // Return the updated user profile
+      const { _id, email, username, role, status, avatar } = updatedCustomer;
+      res.json({
+        id: _id,
+        email,
+        username,
+        name: updatedCustomer.name,
+        address: updatedCustomer.address,
+        phoneNumber: updatedCustomer.phoneNumber,
+        role,
+        status,
+        avatar,
+      });
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        return res.status(422).json({
           error: 1,
-          message: err.message,
-          fields: err.errors,
+          message: error.message,
+          fields: error.errors,
         });
       }
+      console.error(error);
+      return res.status(500).json({
+        error: 1,
+        message: "Internal Server Error",
+      });
     }
   },
+
   invoice: async (req, res) => {
     // Get the transaction details from the request
     const transaction = req.body;
