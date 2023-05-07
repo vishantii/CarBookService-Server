@@ -452,54 +452,81 @@ module.exports = {
     }
   },
 
-  editProfile: async (req, res) => {
+  editProfile: async (req, res, next) => {
     try {
-      const { name, address, phoneNumber } = req.body;
+      const { name = "", phoneNumber = "" } = req.body;
 
-      // Update payload
-      const updatePayload = {};
-      if (name) updatePayload.name = name;
-      if (address) updatePayload.address = address;
-      if (phoneNumber) updatePayload.phoneNumber = phoneNumber;
+      const payload = {};
 
-      // Check if the user uploaded a new avatar file
+      if (name.length) payload.name = name;
+      if (phoneNumber.length) payload.phoneNumber = phoneNumber;
+
       if (req.file) {
-        updatePayload.avatar = req.file.filename;
-      }
+        let tmp_path = req.file.path;
+        let originalExt =
+          req.file.originalname.split(".")[
+            req.file.originalname.split(".").length - 1
+          ];
+        let filename = req.file.filename + "." + originalExt;
+        let targetPath = path.resolve(
+          config.rootPath,
+          `public/uploads/${filename}`
+        );
+        const src = fs.createReadStream(tmp_path);
+        const dest = fs.createWriteStream(targetPath);
+        src.pipe(dest);
+        src.on("end", async () => {
+          let customer = await Customer.findOne({ _id: req.customer._id });
+          let currImage = `${config.rootPath}/public/uploads/${customer.avatar}`;
+          if (fs.existsSync(currImage)) {
+            fs.unlinkSync(currImage);
+          }
 
-      // Update user profile
-      const updatedCustomer = await Customer.findByIdAndUpdate(
-        req.customer._id,
-        updatePayload,
-        { new: true, runValidators: true }
-      );
+          await Customer.findOneAndUpdate(
+            {
+              _id: req.customer._id,
+            },
+            { ...payload, avatar: filename },
+            { new: true, runValidators: true }
+          );
 
-      // Return the updated user profile
-      const { _id, email, username, role, status, avatar } = updatedCustomer;
-      res.json({
-        id: _id,
-        email,
-        username,
-        name: updatedCustomer.name,
-        address: updatedCustomer.address,
-        phoneNumber: updatedCustomer.phoneNumber,
-        role,
-        status,
-        avatar,
-      });
-    } catch (error) {
-      if (error.name === "ValidationError") {
-        return res.status(422).json({
-          error: 1,
-          message: error.message,
-          fields: error.errors,
+          res.status(200).json({
+            data: {
+              id: customer.id,
+              name: customer.name,
+              phoneNumber: customer.phoneNumber,
+              avatar: customer.avatar,
+            },
+          });
+        });
+        src.on("err", async () => {
+          next(err);
+        });
+      } else {
+        const customer = await Customer.findOneAndUpdate(
+          {
+            _id: req.customer._id,
+          },
+          payload,
+          { new: true, runValidators: true }
+        );
+        res.status(201).json({
+          data: {
+            id: customer.id,
+            name: customer.name,
+            phoneNumber: customer.phoneNumber,
+            avatar: customer.avatar,
+          },
         });
       }
-      console.error(error);
-      return res.status(500).json({
-        error: 1,
-        message: "Internal Server Error",
-      });
+    } catch (err) {
+      if (err && err.name === "ValidationError") {
+        res.status(422).json({
+          error: 1,
+          message: err.message,
+          fields: err.errors,
+        });
+      }
     }
   },
 
