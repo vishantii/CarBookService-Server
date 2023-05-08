@@ -14,7 +14,7 @@ let transactionSchema = mongoose.Schema(
     category: {
       id: { type: mongoose.Schema.Types.ObjectId, required: true },
       name: { type: String, required: true },
-      price: { type: String, required: true },
+      price: { type: Number, required: true },
     },
     cars: {
       id: { type: mongoose.Schema.Types.ObjectId, required: true },

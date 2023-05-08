@@ -8,28 +8,6 @@ const Customer = require("./model");
 const path = require("path");
 const fs = require("fs");
 const mongoose = require("mongoose");
-const { createInvoice } = require("../../Utils/Invoice/createInvoice");
-
-const deleteUserAndTransaction = async (userId, transactionId) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    // Delete the user
-    await Customer.findOneAndRemove({ _id: userId }).session(session);
-
-    // Delete the transaction
-    await Transaction.findOneAndRemove({ _id: transactionId }).session(session);
-
-    // Commit the transaction
-    await session.commitTransaction();
-    session.endSession();
-  } catch (error) {
-    // If any error occurs, abort the transaction and throw the error
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
-  }
-};
 
 module.exports = {
   index: async (req, res) => {
@@ -528,34 +506,5 @@ module.exports = {
         });
       }
     }
-  },
-
-  invoice: async (req, res) => {
-    // Get the transaction details from the request
-    const transaction = req.body;
-
-    // Generate a unique name for the invoice
-    const date = new Date();
-    const fileName = `invoice_${date.getTime()}.pdf`;
-    const directoryPath = "Utils/Invoice/files";
-
-    // Generate the invoice and get the file path
-    const invoicePath = await createInvoice(
-      transaction,
-      directoryPath,
-      fileName
-    );
-    res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
-
-    // Send the file to the client for download
-    res.download(invoicePath, fileName, (err) => {
-      if (err) {
-        console.error(err);
-        res.status(500).send("Error downloading file");
-      }
-
-      // Delete the file after it has been sent
-      fs.unlinkSync(invoicePath);
-    });
   },
 };

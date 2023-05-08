@@ -1,3 +1,5 @@
+<% const formatRupiah = (value) => { return value.toLocaleString("id-ID", {
+style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
 <table id="example2" class="table table-bordered table-hover">
   <thead>
     <tr>
@@ -42,7 +44,10 @@
         <% } %>
       </td>
       <td><%= transaction[i]?.notes %></td>
-      <td><%= transaction[i]?.chooseDate %></td>
+      <td>
+        <%= new Date(transaction[i]?.chooseDate).toLocaleDateString('id-ID',
+        {day: 'numeric', month: 'long', year: 'numeric'}) %>
+      </td>
       <td><%= transaction[i]?.chooseTime %></td>
 
       <td>
@@ -60,7 +65,7 @@
       </td>
 
       <td><%= transaction[i]?.category?.name %></td>
-      <td><%= transaction[i]?.total %></td>
+      <td><%= formatRupiah(transaction[i]?.total) %></td>
       <% if(transaction[i].status=== 0 ) { %>
       <td>
         <form
@@ -94,6 +99,20 @@
           <button class="btn btn-info btn-sm" type="submit">
             <i class="fas fa-check"></i>
             Check Out
+          </button>
+        </form>
+      </td>
+      <%} %> <% if(transaction[i].status=== 3) { %>
+      <td>
+        <form
+          target="_blank"
+          style="display: inline-block"
+          action="/transaction/invoice/<%= transaction[i]._id %>"
+          method="GET"
+        >
+          <button class="btn btn-info btn-sm" type="submit">
+            <i class="fas fa-check"></i>
+            Cetak Invoice
           </button>
         </form>
       </td>

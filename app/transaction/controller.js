@@ -1,5 +1,6 @@
 const Transaction = require("./model");
 const Schedule = require("../schedule/model");
+const { createInvoicePDF } = require("../../Utils/Invoice/createInvoice");
 
 module.exports = {
   index: async (req, res) => {
@@ -8,6 +9,7 @@ module.exports = {
       const alertStatus = req.flash("alertStatus");
 
       const alert = { message: alertMessage, status: alertStatus };
+
       const currentDate = new Date().toISOString().slice(0, 10); // mendapatkan tanggal hari ini
 
       let transactionQuery = Transaction.find({
@@ -166,6 +168,64 @@ module.exports = {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
       res.redirect("/transaction");
+    }
+  },
+  // invoice: async (req, res) => {
+  //   // Get the transaction details from the request
+  //   const transaction = req.body;
+
+  //   // Generate a unique name for the invoice
+  //   const date = new Date();
+  //   const fileName = `invoice_${date.getTime()}.pdf`;
+  //   const directoryPath = "Utils/Invoice/files";
+
+  //   // Generate the invoice PDF using PDFKit
+  //   const doc = createInvoicePDF(transaction);
+
+  //   // Set the response headers to display the PDF in the browser
+  //   res.setHeader("Content-Type", "application/pdf");
+  //   res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+
+  //   // Pipe the PDF document to the response stream
+  //   doc.pipe(res);
+
+  //   // End the document
+  //   doc.end();
+
+  //   // Open the PDF document in a new browser tab
+  //   const file = path.join(directoryPath, fileName);
+  //   const fileData = fs.readFileSync(file);
+  //   const base64Data = fileData.toString("base64");
+  //   const pdfUrl = "data:application/pdf;base64," + base64Data;
+  //   const script = `window.open('${pdfUrl}');`;
+  //   res.write(
+  //     `<html><head><script>${script}</script></head><body></body></html>`
+  //   );
+  //   res.end();
+  // },
+  invoice: async (req, res) => {
+    try {
+      const transactionId = req.params.id;
+      const trans = await Transaction.findById(transactionId)
+        .populate("userId")
+        .populate("category")
+        .populate({
+          path: "spareparts.sparepartId",
+          select: "name price",
+        })
+        .populate("cars")
+        .exec();
+
+      console.log(
+        "trans-->",
+        trans.spareparts.map((res) => {
+          return res.sparepartId;
+        })
+      );
+      res.render("admin/invoice/invoice", { transaction: trans });
+    } catch (err) {
+      console.log(err);
+      res.status(500).send("Internal Server Error");
     }
   },
 };

@@ -3,7 +3,7 @@ const PDFDocument = require("pdfkit");
 const moment = require("moment");
 const path = require("path");
 
-const createInvoice = async (invoice, directoryPath, fileName) => {
+const createInvoicePDF = async (invoice, directoryPath, fileName) => {
   const fullPath = path.join(directoryPath, fileName);
   const stream = fs.createWriteStream(fullPath);
 
@@ -17,14 +17,16 @@ const createInvoice = async (invoice, directoryPath, fileName) => {
   doc.end();
   doc.pipe(stream);
 
-  return new Promise((resolve, reject) => {
-    stream.on("finish", () => {
-      resolve(fullPath);
-    });
-    doc.on("error", (err) => {
-      reject(err);
-    });
-  });
+  return doc;
+
+  // return new Promise((resolve, reject) => {
+  //   stream.on("finish", () => {
+  //     resolve(fullPath);
+  //   });
+  //   doc.on("error", (err) => {
+  //     reject(err);
+  //   });
+  // });
 };
 
 function generateHeader(doc) {
@@ -153,5 +155,5 @@ function formatDate(date) {
 }
 
 module.exports = {
-  createInvoice,
+  createInvoicePDF,
 };

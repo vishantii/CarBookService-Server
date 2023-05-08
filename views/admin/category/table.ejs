@@ -1,3 +1,6 @@
+<% const formatRupiah = (value) => { return value.toLocaleString("id-ID", {
+style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
+
 <table id="example2" class="table table-bordered table-hover">
   <thead>
     <tr>
@@ -12,7 +15,7 @@
     <tr>
       <td><%= i + 1 %></td>
       <td><%= category[i].name %></td>
-      <td><%= category[i].price %></td>
+      <td><%= formatRupiah(category[i].price) %></td>
       <td>
         <form
           action="/category/delete/<%= category[i]._id %>?_method=DELETE"

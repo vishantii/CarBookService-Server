@@ -5,6 +5,7 @@ const {
   actionStatus,
   actionDelete,
   secondIndex,
+  invoice,
 } = require("./controller");
 
 const { isLoginAdmin } = require("../middleware/auth");
@@ -14,5 +15,6 @@ router.get("/", index);
 router.get("/second", secondIndex);
 router.put("/status/:id", actionStatus);
 router.delete("/delete/:id", actionDelete);
+router.get("/invoice/:id", invoice);
 
 module.exports = router;

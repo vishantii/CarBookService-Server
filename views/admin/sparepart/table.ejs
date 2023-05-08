@@ -1,3 +1,5 @@
+<% const formatRupiah = (value) => { return value.toLocaleString("id-ID", {
+style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
 <table id="example2" class="table table-bordered table-hover">
   <thead>
     <tr>
@@ -16,7 +18,7 @@
       <td><%= i + 1 %></td>
       <td><%= sparepart[i]._id %></td>
       <td><%= sparepart[i].name %></td>
-      <td><%= sparepart[i].price %></td>
+      <td><%= formatRupiah(sparepart[i].price)%></td>
       <td><%= sparepart[i].stock %></td>
       <td>
         <% if(sparepart[i].status === 'Y'){ %>

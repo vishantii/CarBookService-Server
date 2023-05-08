@@ -7,7 +7,7 @@ let categorySchema = mongoose.Schema(
       require: [true, "Nama kategori harus diiisi"],
     },
     price: {
-      type: String,
+      type: Number,
       require: [true, "Harga harus diiisi"],
     },
   },

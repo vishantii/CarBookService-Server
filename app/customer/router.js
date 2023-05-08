@@ -52,6 +52,5 @@ router.put(
   multer({ dest: os.tmpdir() }).single("image"),
   editProfile
 );
-router.post("/invoice", invoice);
 
 module.exports = router;
