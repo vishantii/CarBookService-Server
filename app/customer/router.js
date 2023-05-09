@@ -13,7 +13,7 @@ const {
   cancelTransaction,
   spareparts,
   updateSchedule,
-  invoice,
+  // invoice,
   carmake,
   carById,
   index,
@@ -37,7 +37,7 @@ router.put("/transactions/:id", isLoginCustomer, updateStatusTransaction);
 router.post("/checkout", isLoginCustomer, checkout);
 router.post("/category/byId", isLoginCustomer, categoryById);
 router.post("/carmake/byId", isLoginCustomer, carById);
-router.post(
+router.put(
   "/transactions/:id/change-date-time",
   isLoginCustomer,
   updateSchedule
@@ -52,5 +52,6 @@ router.put(
   multer({ dest: os.tmpdir() }).single("image"),
   editProfile
 );
+// router.post("/invoice", invoice);
 
 module.exports = router;

@@ -12,9 +12,22 @@ module.exports = {
           // Loop through each time slot and set the available property to false if the time has passed
           availability.times.forEach((time) => {
             const timeDate = new Date(`${date.toDateString()} ${time.time}`);
+            const currentTime = new Date();
+
+            // Check if the time has passed for WIB timezone
             if (
-              timeDate < new Date() ||
-              timeDate.getHours() === new Date().getHours()
+              timeDate <
+                new Date(
+                  currentTime.toLocaleString("en-US", {
+                    timeZone: "Asia/Jakarta",
+                  })
+                ) ||
+              timeDate.getHours() ===
+                new Date(
+                  currentTime.toLocaleString("en-US", {
+                    timeZone: "Asia/Jakarta",
+                  })
+                ).getHours()
             ) {
               time.available = false;
             }
@@ -48,9 +61,22 @@ module.exports = {
         // Loop through each time slot and set the available property to false if the time has passed
         times.forEach((time) => {
           const timeDate = new Date(`${date.toDateString()} ${time.time}`);
+          const currentTime = new Date();
+
+          // Check if the time has passed for WIB timezone
           if (
-            timeDate < new Date() ||
-            timeDate.getHours() === new Date().getHours()
+            timeDate <
+              new Date(
+                currentTime.toLocaleString("en-US", {
+                  timeZone: "Asia/Jakarta",
+                })
+              ) ||
+            timeDate.getHours() ===
+              new Date(
+                currentTime.toLocaleString("en-US", {
+                  timeZone: "Asia/Jakarta",
+                })
+              ).getHours()
           ) {
             time.available = false;
           }

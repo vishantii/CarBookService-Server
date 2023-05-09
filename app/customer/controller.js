@@ -8,6 +8,7 @@ const Customer = require("./model");
 const path = require("path");
 const fs = require("fs");
 const mongoose = require("mongoose");
+const moment = require("moment-timezone");
 
 module.exports = {
   index: async (req, res) => {
@@ -192,6 +193,7 @@ module.exports = {
     try {
       const date = new Date(req.body.date);
       const time = req.body.time;
+
       Schedule.findOneAndUpdate(
         { date: date, "times.time": time },
         { $set: { "times.$.available": false } }
@@ -278,43 +280,56 @@ module.exports = {
   },
 
   updateSchedule: async (req, res) => {
-    const { id } = req.params;
-    const { date, time } = req.body;
-
     try {
+      const { id } = req.params;
+      const { chooseDate, chooseTime } = req.body;
+
+      // Find the transaction by ID
       const transaction = await Transaction.findById(id);
       if (!transaction) {
-        return res.status(404).json({ message: "Transaction not found" });
+        return res.status(404).send({ message: "Transaction not found" });
       }
 
-      const availability = await Schedule.findOne({ date });
-      if (!availability) {
-        return res.status(404).json({ message: "Availability not found" });
+      // Find the old and new schedules
+      const oldSchedule = await Schedule.findOne({
+        date: new Date(transaction.chooseDate),
+      });
+      const newSchedule = await Schedule.findOne({
+        date: new Date(chooseDate),
+      });
+      if (!oldSchedule || !newSchedule) {
+        return res.status(404).send({ message: "Schedule not found" });
       }
 
-      const timeSlot = availability.times.find((t) => t.time === time);
-      if (!timeSlot || !timeSlot.available) {
-        return res.status(400).json({ message: "Time slot not available" });
-      }
-
-      const oldTimeSlot = availability.times.find(
+      // Find the old and new time slots
+      const oldTimeSlot = oldSchedule.times.find(
         (t) => t.time === transaction.chooseTime
       );
-      if (oldTimeSlot) {
-        oldTimeSlot.available = true;
-        await availability.save();
+      const newTimeSlot = newSchedule.times.find((t) => t.time === chooseTime);
+      if (!oldTimeSlot || !newTimeSlot) {
+        return res.status(404).send({ message: "Time slot not found" });
       }
 
-      timeSlot.available = false;
-      await availability.save();
+      // Update the availability of old and new time slots
+      oldTimeSlot.available = true;
+      newTimeSlot.available = false;
 
-      transaction.chooseDate = date;
-      transaction.chooseTime = time;
-      await transaction.save();
+      // Update the transaction schedule
+      transaction.chooseDate = chooseDate;
+      transaction.chooseTime = chooseTime;
 
-      res.json({ message: "Date and time updated successfully" });
-    } catch (err) {
-      res.status(500).json({ message: err.message });
+      // Save the changes to the database
+      await Promise.all([
+        oldSchedule.save(),
+        newSchedule.save(),
+        transaction.save(),
+      ]);
+
+      // Return the updated transaction object
+      res.send(transaction);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({ message: "Internal server error" });
     }
   },
 
