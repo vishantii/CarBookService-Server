@@ -309,7 +309,6 @@ module.exports = {
       const timestamp = Date.now();
       const randomNum = Math.floor(Math.random() * 1000000) + 1;
       const bookingNum = timestamp + randomNum;
-
       // Find all transactions with the same booking date and category as the current transaction
       const sameDateTransactions = await Transaction.find({
         chooseDate: chooseDate,
@@ -319,12 +318,17 @@ module.exports = {
       // Sort transactions by createdAt in ascending order (earlier createdAt first)
       sameDateTransactions.sort((a, b) => a.createdAt - b.createdAt);
 
-      // Get the queue number for the current transaction based on the position of the last transaction in the sorted array
-      const queueNumber =
-        sameDateTransactions.length > 0
-          ? sameDateTransactions[sameDateTransactions.length - 1].queueNumber +
-            1
-          : 1;
+      // Get the queue number for the current transaction based on the position of the current transaction in the sorted array
+      let queueNumber = sameDateTransactions.findIndex((transaction) =>
+        transaction._id.equals(transaction._id)
+      );
+      if (queueNumber === -1) {
+        // If the current transaction is not found in the array, set the queue number to 1
+        queueNumber = 1;
+      } else {
+        // Otherwise, set the queue number to 1 greater than the index of the current transaction in the sorted array
+        queueNumber += 1;
+      }
 
       // Update the payload to exclude chooseTime and include bookingNumber and queueNumber
       const payload = {
