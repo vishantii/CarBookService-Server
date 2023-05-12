@@ -310,6 +310,22 @@ module.exports = {
       const randomNum = Math.floor(Math.random() * 1000000) + 1;
       const bookingNum = timestamp + randomNum;
 
+      // Find all transactions with the same booking date and category as the current transaction
+      const sameDateTransactions = await Transaction.find({
+        chooseDate: chooseDate,
+        category: category,
+      });
+
+      // Sort transactions by createdAt in ascending order (earlier createdAt first)
+      sameDateTransactions.sort((a, b) => a.createdAt - b.createdAt);
+
+      // Get the queue number for the current transaction based on the position of the last transaction in the sorted array
+      const queueNumber =
+        sameDateTransactions.length > 0
+          ? sameDateTransactions[sameDateTransactions.length - 1].queueNumber +
+            1
+          : 1;
+
       // Update the payload to exclude chooseTime and include bookingNumber and queueNumber
       const payload = {
         cars: cars,
@@ -320,7 +336,7 @@ module.exports = {
         notes: notes,
         userId: req.customer._id,
         bookingNumber: bookingNum,
-        queueNumber: slot[reservedSlots] + 1, // FCFS queue number
+        queueNumber: queueNumber, // FCFS queue number
         total: total + chosenCategory.price,
         spareparts: spareparts.map((sparepart) => ({
           sparepartId: mongoose.Types.ObjectId(sparepart.sparepartId),
