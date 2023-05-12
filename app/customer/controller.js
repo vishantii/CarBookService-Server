@@ -5,6 +5,7 @@ const Sparepart = require("../sparepart/model");
 const Carmake = require("../carmake/model");
 const config = require("../../config");
 const Customer = require("./model");
+const Slot = require("../dateslot/model");
 const path = require("path");
 const fs = require("fs");
 const mongoose = require("mongoose");
@@ -215,6 +216,46 @@ module.exports = {
     }
   },
 
+  queueStatus: async (req, res) => {
+    try {
+      const { chooseDate, category } = req.body;
+
+      let reservedSlots = 0;
+      let totalSlots = 0;
+
+      let slot = await Slot.findOne({ date: chooseDate }).exec();
+      if (!slot) {
+        // If slot for the chosen date does not exist, create a new slot with default values
+        slot = new Slot({
+          date: chooseDate,
+          totalSlotsLight: 15,
+          totalSlotsHeavy: 5,
+          reservedSlotsLight: 0,
+          reservedSlotsHeavy: 0,
+        });
+        await slot.save();
+      }
+
+      // Get the total slots and reserved slots for the chosen category
+      if (category.name === "Servis Ringan") {
+        totalSlots = slot.totalSlotsLight;
+        reservedSlots = slot.reservedSlotsLight;
+      } else if (category.name === "Servis Berat") {
+        totalSlots = slot.totalSlotsHeavy;
+        reservedSlots = slot.reservedSlotsHeavy;
+      } else {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+
+      res.status(200).json({
+        data: reservedSlots,
+        totalSlots: totalSlots,
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message || `Internal server error` });
+    }
+  },
+
   checkout: async (req, res) => {
     try {
       const {
@@ -222,28 +263,65 @@ module.exports = {
         miles,
         licensePlate,
         chooseDate,
-        chooseTime,
         notes,
         category,
         spareparts,
         total,
       } = req.body;
+
+      // Get the slot for the chosen date
+      const slot = await Slot.findOne({ date: chooseDate });
+      if (!slot) {
+        const newSlot = new Slot({
+          date: chooseDate,
+          totalSlotsLight: 15,
+          totalSlotsHeavy: 5,
+          reservedSlotsLight: 0,
+          reservedSlotsHeavy: 0,
+        });
+        await newSlot.save();
+      }
+
+      // Check if the chosen category is valid
+      const chosenCategory = await Category.findById(category.id);
+      if (!chosenCategory) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+
+      // Determine the reserved slots property to update based on the chosen category
+      let reservedSlots;
+      let totalSlots;
+      if (chosenCategory.name === "Servis Ringan") {
+        reservedSlots = "reservedSlotsLight";
+        totalSlots = "totalSlotsLight";
+      } else if (chosenCategory.name === "Servis Berat") {
+        reservedSlots = "reservedSlotsHeavy";
+        totalSlots = "totalSlotsHeavy";
+      } else {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+
+      // Check if there is enough available slots for the chosen category
+      if (!slot || slot[reservedSlots] >= slot[totalSlots]) {
+        return res.status(400).json({ message: "Booking slot is full" });
+      }
+
       const timestamp = Date.now();
       const randomNum = Math.floor(Math.random() * 1000000) + 1;
       const bookingNum = timestamp + randomNum;
 
-      // Update the payload to include an array of objects for each sparepart
+      // Update the payload to exclude chooseTime and include bookingNumber and queueNumber
       const payload = {
         cars: cars,
         category: category,
         miles: miles,
         licensePlate: licensePlate,
         chooseDate: chooseDate,
-        chooseTime: chooseTime,
         notes: notes,
         userId: req.customer._id,
         bookingNumber: bookingNum,
-        total: total,
+        queueNumber: slot[reservedSlots] + 1, // FCFS queue number
+        total: total + chosenCategory.price,
         spareparts: spareparts.map((sparepart) => ({
           sparepartId: mongoose.Types.ObjectId(sparepart.sparepartId),
           quantity: sparepart.quantity,
@@ -269,6 +347,10 @@ module.exports = {
         }
       }
 
+      // Increment the reservedSlots for the chosen category on the chosen date
+      slot[reservedSlots] += 1;
+      await slot.save();
+
       await transaction.save();
 
       res.status(200).json({
@@ -282,54 +364,95 @@ module.exports = {
   updateSchedule: async (req, res) => {
     try {
       const { id } = req.params;
-      const { chooseDate, chooseTime } = req.body;
+      const { newDate } = req.body;
 
-      // Find the transaction by ID
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid transaction ID" });
+      }
+
+      // Temukan transaksi yang ingin diubah
       const transaction = await Transaction.findById(id);
+
+      // Pastikan transaksi ditemukan dan memiliki status 0 (belum selesai)
       if (!transaction) {
-        return res.status(404).send({ message: "Transaction not found" });
+        return res.status(404).json({ message: "Transaksi tidak ditemukan" });
+      }
+      if (transaction.status !== 0) {
+        return res.status(400).json({
+          message: "Transaksi tidak dapat diubah karena sudah selesai",
+        });
       }
 
-      // Find the old and new schedules
-      const oldSchedule = await Schedule.findOne({
-        date: new Date(transaction.chooseDate),
+      // Cek apakah slot sudah ada, jika belum generate slot baru
+      let slot = await Slot.findOne({ date: newDate });
+      if (!slot) {
+        const maxSlot = 15;
+        slot = new Slot({
+          date: newDate,
+          reservedSlotsLight: 0, // reservedSlotsLight untuk kategori servis ringan
+          reservedSlotsHeavy: 0, // reservedSlotsHeavy untuk kategori servis berat
+          availableSlots: maxSlot,
+        });
+        await slot.save();
+      }
+
+      // Menghitung jumlah transaksi dengan tanggal servis baru
+      const countTransaction = await Transaction.countDocuments({
+        chooseDate: newDate,
+        status: { $ne: 4 }, // status 3 berarti transaksi dibatalkan
       });
-      const newSchedule = await Schedule.findOne({
-        date: new Date(chooseDate),
+
+      // Memastikan tidak ada lebih dari 15 transaksi pada tanggal yang dipilih
+      if (countTransaction >= 15) {
+        return res.status(400).json({
+          message: "Jumlah antrian pada tanggal tersebut sudah penuh",
+        });
+      }
+
+      // Memperbarui transaksi dengan tanggal servis baru
+      const oldDate = transaction.chooseDate;
+      const category = transaction.category;
+      transaction.chooseDate = newDate;
+      await transaction.save();
+
+      // Memperbarui slot di tanggal lama dan tanggal baru
+      const oldSlot = await Slot.findOne({ date: oldDate });
+      if (category.name === "Servis Ringan") {
+        oldSlot.reservedSlotsLight -= 1;
+      } else if (category.name === "Servis Berat") {
+        oldSlot.reservedSlotsHeavy -= 1;
+      }
+      oldSlot.availableSlots += 1;
+      await oldSlot.save();
+
+      if (category.name === "Servis Ringan") {
+        slot.reservedSlotsLight += 1;
+      } else if (category.name === "Servis Berat") {
+        slot.reservedSlotsHeavy += 1;
+      }
+      slot.availableSlots -= 1;
+      await slot.save();
+
+      // update queueNumber transaksinya
+      const queueNumber =
+        (await Transaction.countDocuments({
+          chooseDate: newDate,
+          category: category,
+          status: { $ne: 4 },
+          createdAt: { $lt: transaction.createdAt },
+        })) + 1;
+      transaction.queueNumber = queueNumber;
+      await transaction.save();
+
+      res.status(200).json({
+        message: "Jadwal servis berhasil diubah",
+        oldDate: oldDate,
+        oldDateSlot: oldSlot.availableSlots,
+        newDate: newDate,
+        newDateSlot: slot.availableSlots,
       });
-      if (!oldSchedule || !newSchedule) {
-        return res.status(404).send({ message: "Schedule not found" });
-      }
-
-      // Find the old and new time slots
-      const oldTimeSlot = oldSchedule.times.find(
-        (t) => t.time === transaction.chooseTime
-      );
-      const newTimeSlot = newSchedule.times.find((t) => t.time === chooseTime);
-      if (!oldTimeSlot || !newTimeSlot) {
-        return res.status(404).send({ message: "Time slot not found" });
-      }
-
-      // Update the availability of old and new time slots
-      oldTimeSlot.available = true;
-      newTimeSlot.available = false;
-
-      // Update the transaction schedule
-      transaction.chooseDate = chooseDate;
-      transaction.chooseTime = chooseTime;
-
-      // Save the changes to the database
-      await Promise.all([
-        oldSchedule.save(),
-        newSchedule.save(),
-        transaction.save(),
-      ]);
-
-      // Return the updated transaction object
-      res.send(transaction);
-    } catch (error) {
-      console.error(error);
-      res.status(500).send({ message: "Internal server error" });
+    } catch (err) {
+      res.status(500).json({ message: err.message || "Internal server error" });
     }
   },
 
@@ -376,55 +499,43 @@ module.exports = {
     const newStatus = req.body.status;
 
     Transaction.findById(transactionId)
-      .then((transaction) => {
+      .then(async (transaction) => {
         if (!transaction) {
           res.status(404).send({ message: "Transaction not found" });
         } else {
           transaction.status = newStatus;
-          transaction
-            .save()
-            .then((result) => {
-              console.log(
-                `Updated status of transaction with ID ${result._id}`
-              );
+          const chooseDate = transaction.chooseDate;
+          const chooseCategory = transaction.category;
+          let slot = await Slot.findOne({ date: chooseDate }).exec();
 
-              if (newStatus === 4) {
-                Schedule.findOne({ date: new Date(transaction.chooseDate) })
-                  .then((schedule) => {
-                    const time = schedule.times.find(
-                      (t) => t.time === transaction.chooseTime
-                    );
-                    time.available = true;
-                    schedule
-                      .save()
-                      .then(() => {
-                        console.log(
-                          `Updated availability for ${transaction.chooseDate} ${transaction.chooseTime}`
-                        );
-                        res.send(result);
-                      })
-                      .catch((error) => {
-                        console.error(error);
-                        res.status(500);
-                      });
-                  })
-                  .catch((error) => {
-                    console.error(error);
-                    res.status(500);
-                  });
-              } else {
-                res.send(result);
-              }
-            })
-            .catch((error) => {
-              console.error(error);
-              res.sendStatus(500);
-            });
+          if (newStatus === 4) {
+            // Cancel transaction
+            if (chooseCategory.name === "Servis Ringan") {
+              slot.reservedSlotsLight -= 1;
+            } else if (chooseCategory === "Servis Berat") {
+              slot.reservedSlotsHeavy -= 1;
+            }
+          } else {
+            // Update transaction status to other than cancelled
+            if (chooseCategory.name === "Servis Ringan") {
+              slot.reservedSlotsLight += 1;
+            } else if (chooseCategory === "Servis Berat") {
+              slot.reservedSlotsHeavy += 1;
+            }
+          }
+
+          await slot.save();
+          await transaction.save();
+
+          console.log(
+            `Updated status of transaction with ID ${transaction._id}`
+          );
+          res.send(transaction);
         }
       })
       .catch((error) => {
         console.error(error);
-        res.status(500);
+        res.status(500).send({ message: "Internal server error" });
       });
   },
 

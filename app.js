@@ -14,6 +14,7 @@ const sparepartRouter = require("./app/sparepart/router");
 const usersRouter = require("./app/users/router");
 const transactionRouter = require("./app/transaction/router");
 const customerRouter = require("./app/customer/router");
+const dateSlot = require("./app/dateslot/router");
 const authRouter = require("./app/auth/router");
 const scheduleRouter = require("./app/schedule/router");
 const carMakeRouter = require("./app/carmake/router");
@@ -56,6 +57,7 @@ app.use("/customer", customerRouter);
 
 // api
 app.use(`${URL}/schedule`, scheduleRouter);
+app.use(`${URL}/dateSlot`, dateSlot);
 app.use(`${URL}/customers`, customerRouter);
 app.use(`${URL}/auth`, authRouter);
 // catch 404 and forward to error handler

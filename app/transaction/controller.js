@@ -1,5 +1,5 @@
 const Transaction = require("./model");
-const Schedule = require("../schedule/model");
+const Slot = require("../dateslot/model");
 const moment = require("moment-timezone");
 
 module.exports = {
@@ -130,19 +130,23 @@ module.exports = {
       const { id } = req.params;
       const { status } = req.query;
 
-      // If the status is being updated to 4, update the availability
+      // If the status is being updated to 4, update the reserved slots
       if (status == 4) {
         const transaction = await Transaction.findById(id);
-        const date = new Date(transaction.chooseDate);
-        const time = transaction.chooseTime;
+        const category = transaction.category;
 
-        const availability = await Schedule.findOne({ date });
-        if (availability) {
-          const timeIndex = availability.times.findIndex((t) => t.time == time);
-          if (timeIndex >= 0) {
-            availability.times[timeIndex].available = true;
-            await availability.save();
-          }
+        if (category.name === "Servis Ringan") {
+          await Slot.updateOne(
+            { date: transaction.chooseDate },
+            { $inc: { reservedSlotsLight: -1 } },
+            { upsert: true }
+          );
+        } else if (category.name === "Servis Berat") {
+          await Slot.updateOne(
+            { date: transaction.chooseDate },
+            { $inc: { reservedSlotsHeavy: -1 } },
+            { upsert: true }
+          );
         }
       }
 
@@ -157,6 +161,7 @@ module.exports = {
       res.redirect("/transaction");
     }
   },
+
   actionDelete: async (req, res) => {
     try {
       const { id } = req.params;

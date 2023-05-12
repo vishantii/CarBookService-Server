@@ -13,7 +13,7 @@ style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
       <th>Sparepart</th>
       <th>Keluhan</th>
       <th>Tanggal Servis</th>
-      <th>Jam Servis</th>
+      <th>Antrian Ke-</th>
       <th>Status</th>
       <th>Tipe Servis</th>
       <th>Harga</th>
@@ -48,7 +48,7 @@ style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
         <%= new Date(transaction[i]?.chooseDate).toLocaleDateString('id-ID',
         {day: 'numeric', month: 'long', year: 'numeric'}) %>
       </td>
-      <td><%= transaction[i]?.chooseTime %></td>
+      <td><%= transaction[i]?.queueNumber %></td>
 
       <td>
         <% if(transaction[i].status=== 0 ) { %>

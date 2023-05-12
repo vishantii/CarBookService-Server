@@ -20,6 +20,7 @@ const {
   viewEdit,
   actionEdit,
   actionDelete,
+  queueStatus,
 } = require("./controller");
 
 const { isLoginCustomer } = require("../middleware/auth");
@@ -30,6 +31,7 @@ router.get("/edit/:id", viewEdit);
 router.put("/edit/:id", actionEdit);
 router.delete("/delete/:id", actionDelete);
 router.get("/category", category);
+router.post("/queue", queueStatus);
 router.get("/sparepart", spareparts);
 router.get("/carmake", carmake);
 router.put("/timeslots", updateTimeAvailability);

@@ -27,15 +27,14 @@ let transactionSchema = mongoose.Schema(
       type: String,
       require: [true, "Tanggal servis harus diisi"],
     },
-    chooseTime: {
-      type: String,
-      require: [true, "Jam servis harus diisi"],
-    },
     notes: {
       type: String,
       require: [true, "Keluhan harus diisi"],
     },
     bookingNumber: {
+      type: Number,
+    },
+    queueNumber: {
       type: Number,
     },
     total: {
