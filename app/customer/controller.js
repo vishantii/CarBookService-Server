@@ -306,7 +306,7 @@ module.exports = {
         return res.status(400).json({ message: "Booking slot is full" });
       }
 
-      const timestamp = Date.now();
+      const timestamp = Date.now() + Math.floor(Math.random() * 1000);
       const randomNum = Math.floor(Math.random() * 1000000) + 1;
       const bookingNum = timestamp + randomNum;
       // Find all transactions with the same booking date and category as the current transaction
@@ -315,17 +315,22 @@ module.exports = {
         category: category,
       });
 
-      // Sort transactions by createdAt in ascending order (earlier createdAt first)
-      sameDateTransactions.sort((a, b) => a.createdAt - b.createdAt);
+      // Add a random number to the timestamp to create unique timestamps for each transaction
 
-      // Find the position of the current transaction in the sorted array
-      const currentTransaction = sameDateTransactions.find((transaction) =>
+      // Sort transactions by the new timestamp in ascending order (earlier timestamp first)
+      sameDateTransactions.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Get the queue number for the current transaction based on the position of the current transaction in the sorted array
+      let queueNumber = sameDateTransactions.findIndex((transaction) =>
         transaction._id.equals(transaction._id)
       );
-      const currentIndex = sameDateTransactions.indexOf(currentTransaction);
-
-      // Get the queue number for the current transaction based on its position in the sorted array
-      let queueNumber = currentIndex + 1;
+      if (queueNumber === -1) {
+        // If the current transaction is not found in the array, set the queue number to 1
+        queueNumber = 1;
+      } else {
+        // Otherwise, set the queue number to 1 greater than the index of the current transaction in the sorted array
+        queueNumber += 1;
+      }
 
       // Update the payload to exclude chooseTime and include bookingNumber and queueNumber
       const payload = {
