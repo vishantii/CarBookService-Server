@@ -315,22 +315,27 @@ module.exports = {
         category: category,
       });
 
-      // Add a random number to the timestamp to create unique timestamps for each transaction
+      // Add the current transaction to the array of same date transactions
+      sameDateTransactions.push(transaction);
 
-      // Sort transactions by the new timestamp in ascending order (earlier timestamp first)
-      sameDateTransactions.sort((a, b) => a.timestamp - b.timestamp);
+      // Sort transactions by the createdAt property in ascending order (earlier createdAt first)
+      sameDateTransactions.sort((a, b) => a.createdAt - b.createdAt);
 
       // Get the queue number for the current transaction based on the position of the current transaction in the sorted array
-      let queueNumber = sameDateTransactions.findIndex((transaction) =>
-        transaction._id.equals(transaction._id)
-      );
-      if (queueNumber === -1) {
-        // If the current transaction is not found in the array, set the queue number to 1
-        queueNumber = 1;
-      } else {
-        // Otherwise, set the queue number to 1 greater than the index of the current transaction in the sorted array
-        queueNumber += 1;
-      }
+      let queueNumber =
+        sameDateTransactions.findIndex((t, i, arr) => {
+          if (t._id.equals(transaction._id)) {
+            // If the current transaction is found in the array, set the queue number to 1 greater than the index of the current transaction in the sorted array
+            return true;
+          } else if (
+            t.createdAt.getTime() !== arr[i - 1]?.createdAt?.getTime()
+          ) {
+            // If the current transaction has a different createdAt time than the previous transaction, reset the queue number to 1
+            queueNumber = 1;
+          }
+          // Return false to continue iterating through the array
+          return false;
+        }) + 1;
 
       // Update the payload to exclude chooseTime and include bookingNumber and queueNumber
       const payload = {
