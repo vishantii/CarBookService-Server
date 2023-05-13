@@ -309,31 +309,6 @@ module.exports = {
       const timestamp = Date.now();
       const randomNum = Math.floor(Math.random() * 1000000) + 1;
       const bookingNum = timestamp + randomNum;
-      // Find all transactions with the same booking date and category as the current transaction
-      const sameDateTransactions = await Transaction.find({
-        chooseDate: chooseDate,
-        category: category,
-      });
-
-      // Sort transactions by createdAt in ascending order (earlier createdAt first)
-      sameDateTransactions.sort((a, b) => a.createdAt - b.createdAt);
-
-      // Get the queue number for the current transaction based on the position of the current transaction in the sorted array
-      let queueNumber = 1;
-      if (sameDateTransactions.length > 0) {
-        // Find the index of the earliest transaction with the same booking date and category as the current transaction
-        const earliestTransactionIndex = sameDateTransactions.findIndex(
-          (transaction) => transaction.createdAt >= timestamp
-        );
-
-        if (earliestTransactionIndex === -1) {
-          // If all transactions with the same booking date and category as the current transaction were created later than the current transaction, set the queue number to the length of the array plus 1
-          queueNumber = sameDateTransactions.length + 1;
-        } else {
-          // Otherwise, set the queue number to the position of the earliest transaction with the same booking date and category as the current transaction in the sorted array plus 1
-          queueNumber = earliestTransactionIndex + 1;
-        }
-      }
 
       // Update the payload to exclude chooseTime and include bookingNumber and queueNumber
       const payload = {
@@ -345,7 +320,7 @@ module.exports = {
         notes: notes,
         userId: req.customer._id,
         bookingNumber: bookingNum,
-        queueNumber: queueNumber, // FCFS queue number
+        queueNumber: slot[reservedSlots] + 1, // FCFS queue number
         total: total + chosenCategory.price,
         spareparts: spareparts.map((sparepart) => ({
           sparepartId: mongoose.Types.ObjectId(sparepart.sparepartId),
