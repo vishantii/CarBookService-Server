@@ -515,14 +515,15 @@ module.exports = {
             } else if (chooseCategory === "Servis Berat") {
               slot.reservedSlotsHeavy -= 1;
             }
-          } else {
-            // Update transaction status to other than cancelled
-            if (chooseCategory.name === "Servis Ringan") {
-              slot.reservedSlotsLight += 1;
-            } else if (chooseCategory === "Servis Berat") {
-              slot.reservedSlotsHeavy += 1;
-            }
           }
+          // } else {
+          //   // Update transaction status to other than cancelled
+          //   if (chooseCategory.name === "Servis Ringan") {
+          //     slot.reservedSlotsLight += 1;
+          //   } else if (chooseCategory === "Servis Berat") {
+          //     slot.reservedSlotsHeavy += 1;
+          //   }
+          // }
 
           await slot.save();
           await transaction.save();
