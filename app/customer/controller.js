@@ -321,7 +321,7 @@ module.exports = {
         userId: req.customer._id,
         bookingNumber: bookingNum,
         queueNumber: slot[reservedSlots] + 1, // FCFS queue number
-        total: total + chosenCategory.price,
+        total: total,
         spareparts: spareparts.map((sparepart) => ({
           sparepartId: mongoose.Types.ObjectId(sparepart.sparepartId),
           quantity: sparepart.quantity,
