@@ -1,6 +1,7 @@
 const Transaction = require("./model");
 const Slot = require("../dateslot/model");
 const moment = require("moment-timezone");
+const Sparepart = require("../sparepart/model");
 
 module.exports = {
   index: async (req, res) => {
@@ -61,6 +62,173 @@ module.exports = {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
       res.redirect("/transaction");
+    }
+  },
+  viewEdit: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const transaction = await Transaction.findOne({ _id: id }).populate(
+        "spareparts.sparepartId"
+      );
+
+      const spareparts = await Sparepart.find();
+
+      console.log("transactions-->", transaction);
+
+      res.render("admin/transaction/edit", {
+        transaction,
+        spareparts,
+        name: req.session.user.name,
+        title: "Halaman ubah Transaksi",
+      });
+    } catch (err) {
+      req.flash("alertMessage", `${err.message}`);
+      req.flash("alertStatus", "danger");
+      res.redirect("/transaction");
+    }
+  },
+
+  addSparepart: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { sparepartId } = req.body;
+
+      // Cari transaksi
+      const transaction = await Transaction.findOne({ _id: id });
+
+      // Cari sparepart
+      const sparepart = await Sparepart.findOne({ _id: sparepartId });
+
+      // Tambahkan sparepart ke transaksi
+      transaction.spareparts.push({ sparepartId: sparepart._id });
+
+      // Tambahkan harga sparepart ke total
+      transaction.total += sparepart.price;
+
+      // Simpan perubahan pada transaksi
+      await transaction.save();
+
+      res.status(200).send({ success: true });
+    } catch (err) {
+      res.status(500).send({ success: false, message: err.message });
+    }
+  },
+
+  actionEdit: async (req, res) => {
+    try {
+      await Transaction.findByIdAndUpdate(
+        req.params.id,
+        {
+          $set: {
+            "category.price": req.body["category.price"],
+            spareparts: req.body.spareparts,
+          },
+        },
+        { new: true }
+      );
+      res.redirect("/transaction");
+    } catch (err) {
+      console.error(err);
+      res.redirect("/transaction");
+    }
+  },
+  deleteSparepart: async (req, res) => {
+    try {
+      const { transactionId, sparepartId } = req.params;
+
+      const transaction = await Transaction.findById(transactionId).populate(
+        "spareparts.sparepartId"
+      );
+      if (!transaction) {
+        return res.status(404).send("Transaction not found");
+      }
+
+      const sparepart = transaction.spareparts.find(
+        (sparepart) => sparepart._id.toString() === sparepartId
+      );
+
+      if (!sparepart) {
+        return res.status(404).send("Sparepart not found");
+      }
+
+      const index = transaction.spareparts.indexOf(sparepart);
+      transaction.spareparts.splice(index, 1);
+
+      console.log("index-->", index);
+
+      console.log("DATA-->", sparepart);
+
+      // Update total
+      const sparepartTotal =
+        parseInt(sparepart.quantity) * parseInt(sparepart.sparepartId.price);
+      transaction.total = parseInt(transaction.total) - sparepartTotal;
+
+      console.log("quantitiy-->", sparepart.quantity);
+      console.log("price-->", sparepart.sparepartId.price);
+      console.log("total-->", transaction.total);
+
+      console.log("sparepartTotal-->", sparepartTotal);
+
+      await transaction.save();
+
+      res.redirect(`/transaction/edit/${transactionId}`);
+    } catch (err) {
+      console.log("err-->", err);
+      res.status(500).send("Internal server error");
+    }
+  },
+
+  updateTransaction: async (req, res) => {
+    try {
+      const { categoryPrice } = req.body;
+      const { transactionId } = req.params;
+
+      console.log("price-->", categoryPrice);
+
+      // Mengambil transaksi berdasarkan ID
+      const transaction = await Transaction.findById(transactionId).populate(
+        "spareparts.sparepartId"
+      );
+
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaksi tidak ditemukan" });
+      }
+
+      // Mengubah harga kategori servis
+      transaction.category.price = categoryPrice;
+
+      // Menghitung ulang total transaksi
+      let total = transaction.category.price;
+
+      // Mengupdate harga total transaksi jika ada sparepart
+      if (transaction.spareparts.length > 0) {
+        const sparepartPrices = transaction.spareparts.map((sparepart) => {
+          console.log("sparePrice-->", sparepart);
+          return (
+            parseInt(sparepart.sparepartId.price) * parseInt(sparepart.quantity)
+          );
+        });
+        console.log("parts-->", sparepartPrices);
+        const sparepartsTotal = sparepartPrices.reduce(
+          (acc, curr) => acc + curr,
+          0
+        );
+        console.log("final-->", sparepartsTotal);
+        total += sparepartsTotal;
+      }
+
+      transaction.total = total;
+
+      // Menyimpan perubahan transaksi
+      await transaction.save();
+
+      req.flash("alertMessage", `Berhasil ubah transaksi`);
+      req.flash("alertStatus", "success");
+      res.redirect(`/transaction`);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Terjadi kesalahan server" });
     }
   },
 

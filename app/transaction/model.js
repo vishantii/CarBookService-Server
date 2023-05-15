@@ -44,7 +44,7 @@ let transactionSchema = mongoose.Schema(
       {
         sparepartId: { type: mongoose.Schema.Types.ObjectId, ref: "Sparepart" },
         name: { type: String },
-        price: { type: String },
+        price: { type: Number },
         quantity: { type: Number, required: true, default: 1 },
       },
     ],
