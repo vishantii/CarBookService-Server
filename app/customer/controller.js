@@ -228,8 +228,8 @@ module.exports = {
         // If slot for the chosen date does not exist, create a new slot with default values
         slot = new Slot({
           date: chooseDate,
-          totalSlotsLight: 15,
-          totalSlotsHeavy: 5,
+          totalSlotsLight: 10,
+          totalSlotsHeavy: 12,
           reservedSlotsLight: 0,
           reservedSlotsHeavy: 0,
         });
