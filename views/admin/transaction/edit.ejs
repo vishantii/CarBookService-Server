@@ -1,0 +1,209 @@
+<%- include ../../partials/header.ejs %> <%- include ../../partials/navbar.ejs
+%> <%- include ../../partials/sidebar.ejs %>
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>Kategori</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item">
+              <a href="/transaction">Transaksi</a>
+            </li>
+            <li class="breadcrumb-item active">Ubah</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <!-- /.container-fluid -->
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12">
+          <div class="card card-primary">
+            <div class="card-header">
+              <h3 class="card-title">Form ubah transaksi</h3>
+            </div>
+            <!-- /.card-header -->
+            <!-- form start -->
+            <div class="card-body">
+              <div class="form-group">
+                <div class="form-group">
+                  <div class="form-group">
+                    <label for="sparepartDropdown">Tambah Sparepart</label>
+                    <select class="form-control" id="sparepartDropdown">
+                      <option>Pilih Sparepart</option>
+                      <% spareparts.forEach(sparepart => { %>
+                      <option value="<%= sparepart._id %>">
+                        <%= sparepart.name %>
+                      </option>
+                      <% }) %>
+                    </select>
+                    <button
+                      type="button"
+                      id="tambahSparepartBtn"
+                      class="btn btn-primary mt-3"
+                    >
+                      Tambah Sparepart
+                    </button>
+                  </div>
+                </div>
+
+                <% transaction.spareparts.forEach((sparepart, index) => { %>
+                <div class="row">
+                  <div class="col-md-3">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="spareparts[<%= index %>].sparepartId.[name]"
+                      value="<%= sparepart?.sparepartId?.name %>"
+                      disabled
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="spareparts[<%= index %>].transactionId.[price]"
+                      value="<%= sparepart.sparepartId.price %>"
+                      disabled
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <input
+                      type="number"
+                      class="form-control"
+                      name="spareparts[<%= index %>][quantity]"
+                      value="<%= sparepart.quantity %>"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <form
+                      method="POST"
+                      action="/transaction/<%= transaction._id %>/sparepart/<%= sparepart._id %>?_method=DELETE"
+                    >
+                      <button type="submit" class="btn btn-danger">
+                        Delete
+                      </button>
+                    </form>
+                  </div>
+                </div>
+                <% }) %>
+              </div>
+              <form
+                method="POST"
+                action="/transaction/updateTransaction/<%= transaction._id %>?_method=PUT"
+              >
+                <!-- form fields -->
+                <div class="form-group">
+                  <label for="category.price">Category Service Price</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    name="categoryPrice"
+                    value="<%= transaction.category.price %>"
+                  />
+                </div>
+                <button type="submit" class="btn btn-primary">
+                  Update Transaction
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <!-- /.col -->
+      </div>
+      <!-- /.row -->
+    </div>
+    <!-- /.container-fluid -->
+  </section>
+  <!-- /.content -->
+</div>
+
+<script>
+  const tambahSparepartBtn = document.querySelector("#tambahSparepartBtn");
+  const sparepartDropdown = document.querySelector("#sparepartDropdown");
+
+  tambahSparepartBtn.addEventListener("click", async () => {
+    const sparepartId = sparepartDropdown.value;
+    console.log("ID-->", sparepartId);
+    if (sparepartId === "Pilih Sparepart") {
+      alert("Pilih sparepart terlebih dahulu");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/transaction/<%= transaction._id %>/add-sparepart`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sparepartId }),
+        }
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        // Refresh halaman untuk memuat kembali transaksi dengan data sparepart yang baru ditambahkan
+        window.location.reload();
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan saat menambahkan sparepart");
+    }
+  });
+</script>
+
+<script>
+  const priceInput = document.querySelector('input[name="category.price"]');
+  const price = Number(priceInput.value);
+
+  priceInput.addEventListener("change", (e) => {
+    const newPrice = Number(e.target.value);
+    const total = document.querySelector("#total");
+    total.textContent = `Total: ${price + newPrice}`;
+  });
+</script>
+
+<script>
+  const deleteButtons = document.querySelectorAll(".btn-danger");
+
+  deleteButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      const transactionId = button.dataset.transactionId;
+      const sparepartId = button.dataset.sparepartId;
+
+      try {
+        const response = await fetch(
+          `/transaction/${transactionId}/spareparts`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ sparepartId }),
+          }
+        );
+
+        console.log("response-->", response);
+        // window.location.reload();
+      } catch (error) {
+        console.log("error", error);
+        alert("Error deleting sparepart");
+      }
+    });
+  });
+</script>
+
+<%- include ../../partials/footer.ejs %> <%- include ../../partials/js.ejs %>
