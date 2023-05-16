@@ -36,24 +36,30 @@
             <div class="card-body">
               <div class="form-group">
                 <div class="form-group">
-                  <div class="form-group">
-                    <label for="sparepartDropdown">Tambah Sparepart</label>
-                    <select class="form-control" id="sparepartDropdown">
-                      <option>Pilih Sparepart</option>
-                      <% spareparts.forEach(sparepart => { %>
-                      <option value="<%= sparepart._id %>">
-                        <%= sparepart.name %>
-                      </option>
-                      <% }) %>
-                    </select>
-                    <button
-                      type="button"
-                      id="tambahSparepartBtn"
-                      class="btn btn-primary mt-3"
-                    >
-                      Tambah Sparepart
-                    </button>
-                  </div>
+                  <label for="sparepartDropdown">Tambah Sparepart</label>
+                  <select class="form-control" id="sparepartDropdown">
+                    <option>Pilih Sparepart</option>
+                    <% spareparts.forEach(sparepart => { %>
+                    <option value="<%= sparepart._id %>">
+                      <%= sparepart.name %>
+                    </option>
+                    <% }) %>
+                  </select>
+                  <label for="quantityInput">Quantity</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="quantityInput"
+                    min="1"
+                    value="1"
+                  />
+                  <button
+                    type="button"
+                    id="tambahSparepartBtn"
+                    class="btn btn-primary mt-3"
+                  >
+                    Tambah Sparepart
+                  </button>
                 </div>
 
                 <% transaction.spareparts.forEach((sparepart, index) => { %>
@@ -82,6 +88,7 @@
                       class="form-control"
                       name="spareparts[<%= index %>][quantity]"
                       value="<%= sparepart.quantity %>"
+                      disabled
                     />
                   </div>
                   <div class="col-md-3">
@@ -103,12 +110,19 @@
               >
                 <!-- form fields -->
                 <div class="form-group">
-                  <label for="category.price">Category Service Price</label>
+                  <label for="category.price">Service Price</label>
                   <input
                     type="number"
                     class="form-control"
                     name="categoryPrice"
                     value="<%= transaction.category.price %>"
+                  />
+                  <label for="notes">Notes</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="notes"
+                    value="<%= transaction.notes %>"
                   />
                 </div>
                 <button type="submit" class="btn btn-primary">
@@ -130,10 +144,12 @@
 <script>
   const tambahSparepartBtn = document.querySelector("#tambahSparepartBtn");
   const sparepartDropdown = document.querySelector("#sparepartDropdown");
+  const quantityInput = document.querySelector("#quantityInput");
 
   tambahSparepartBtn.addEventListener("click", async () => {
     const sparepartId = sparepartDropdown.value;
-    console.log("ID-->", sparepartId);
+    const quantity = quantityInput.value;
+
     if (sparepartId === "Pilih Sparepart") {
       alert("Pilih sparepart terlebih dahulu");
       return;
@@ -147,7 +163,7 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ sparepartId }),
+          body: JSON.stringify({ sparepartId, quantity }),
         }
       );
       const data = await response.json();

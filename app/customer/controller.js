@@ -269,20 +269,8 @@ module.exports = {
         total,
       } = req.body;
 
-      // Get the slot for the chosen date
       const slot = await Slot.findOne({ date: chooseDate });
-      if (!slot) {
-        const newSlot = new Slot({
-          date: chooseDate,
-          totalSlotsLight: 15,
-          totalSlotsHeavy: 5,
-          reservedSlotsLight: 0,
-          reservedSlotsHeavy: 0,
-        });
-        await newSlot.save();
-      }
 
-      // Check if the chosen category is valid
       const chosenCategory = await Category.findById(category.id);
       if (!chosenCategory) {
         return res.status(400).json({ message: "Invalid category" });

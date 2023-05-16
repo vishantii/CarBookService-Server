@@ -92,7 +92,7 @@ module.exports = {
   addSparepart: async (req, res) => {
     try {
       const { id } = req.params;
-      const { sparepartId } = req.body;
+      const { sparepartId, quantity } = req.body;
 
       // Cari transaksi
       const transaction = await Transaction.findOne({ _id: id });
@@ -100,11 +100,11 @@ module.exports = {
       // Cari sparepart
       const sparepart = await Sparepart.findOne({ _id: sparepartId });
 
-      // Tambahkan sparepart ke transaksi
-      transaction.spareparts.push({ sparepartId: sparepart._id });
+      // Tambahkan sparepart ke transaksi dengan quantity
+      transaction.spareparts.push({ sparepartId: sparepart._id, quantity });
 
-      // Tambahkan harga sparepart ke total
-      transaction.total += sparepart.price;
+      // Tambahkan harga sparepart ke total berdasarkan quantity
+      transaction.total += sparepart.price * quantity;
 
       // Simpan perubahan pada transaksi
       await transaction.save();
@@ -181,7 +181,7 @@ module.exports = {
 
   updateTransaction: async (req, res) => {
     try {
-      const { categoryPrice } = req.body;
+      const { categoryPrice, notes } = req.body;
       const { transactionId } = req.params;
 
       console.log("price-->", categoryPrice);
@@ -219,6 +219,7 @@ module.exports = {
       }
 
       transaction.total = total;
+      transaction.notes = notes;
 
       // Menyimpan perubahan transaksi
       await transaction.save();
@@ -280,7 +281,7 @@ module.exports = {
 
       const flattenedTransactions = sortedTransactions.flat();
 
-      res.render("admin/transaction/view_transaction", {
+      res.render("admin/secondtransaction/view_transaction", {
         transaction: flattenedTransactions,
         alert,
         name: req.session.user.name,
