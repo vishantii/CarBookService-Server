@@ -24,7 +24,7 @@ module.exports = {
         transactionQuery = transactionQuery.where({ chooseDate: date });
       }
 
-      const transactions = await transactionQuery
+      const transaction = await transactionQuery
         .populate({
           path: "spareparts.sparepartId",
           select: "name price",
@@ -33,7 +33,7 @@ module.exports = {
         .exec();
 
       res.render("admin/transaction/view_transaction", {
-        transactions,
+        transaction,
         alert,
         name: req.session.user.name,
         title: "Halaman Transaksi",
@@ -234,7 +234,7 @@ module.exports = {
         transactionQuery = transactionQuery.where({ chooseDate: date });
       }
 
-      const transactions = await transactionQuery
+      const transaction = await transactionQuery
         .populate({
           path: "spareparts.sparepartId",
           select: "name price",
@@ -243,7 +243,7 @@ module.exports = {
         .exec();
 
       res.render("admin/transaction/view_transaction", {
-        transactions,
+        transaction,
         alert,
         name: req.session.user.name,
         title: "Halaman Transaksi",
