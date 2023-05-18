@@ -308,13 +308,24 @@ module.exports = {
         notes: notes,
         userId: req.customer._id,
         bookingNumber: bookingNum,
-        queueNumber: slot[reservedSlots] + 1, // FCFS queue number
         total: total,
         spareparts: spareparts.map((sparepart) => ({
           sparepartId: mongoose.Types.ObjectId(sparepart.sparepartId),
           quantity: sparepart.quantity,
         })),
       };
+
+      // Retrieve all transactions with the same chooseDate and category to compare for FCFS and service priority
+      const transactions = await Transaction.find({
+        chooseDate: chooseDate,
+        "category.id": category.id,
+      });
+
+      // Sort transactions based on timestamp (earliest first)
+      transactions.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Calculate the queue number based on FCFS for transactions with the same chooseDate and category
+      payload.queueNumber = transactions.length + 1;
 
       const transaction = new Transaction(payload);
 
