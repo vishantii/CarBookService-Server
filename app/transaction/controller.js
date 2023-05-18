@@ -242,7 +242,7 @@ module.exports = {
         .sort({ queueNumber: 1, timestamp: 1 })
         .exec();
 
-      res.render("admin/transaction/view_transaction", {
+      res.render("admin/secondtransaction/view_transaction", {
         transaction,
         alert,
         name: req.session.user.name,
