@@ -29,31 +29,11 @@ module.exports = {
           path: "spareparts.sparepartId",
           select: "name price",
         })
-        .sort({ chooseTime: -1, chooseDate: 1 })
+        .sort({ queueNumber: 1, timestamp: 1 })
         .exec();
 
-      const sortedTransactions = [];
-
-      let currentTransactionDate = null;
-      let currentTransactionTime = null;
-
-      for (const transaction of transactions) {
-        if (
-          currentTransactionDate !== transaction.chooseDate ||
-          currentTransactionTime !== transaction.chooseTime
-        ) {
-          currentTransactionDate = transaction.chooseDate;
-          currentTransactionTime = transaction.chooseTime;
-          sortedTransactions.push([transaction]);
-        } else {
-          sortedTransactions[sortedTransactions.length - 1].push(transaction);
-        }
-      }
-
-      const flattenedTransactions = sortedTransactions.flat();
-
       res.render("admin/transaction/view_transaction", {
-        transaction: flattenedTransactions,
+        transactions,
         alert,
         name: req.session.user.name,
         title: "Halaman Transaksi",
@@ -64,6 +44,7 @@ module.exports = {
       res.redirect("/transaction");
     }
   },
+
   viewEdit: async (req, res) => {
     try {
       const { id } = req.params;
@@ -258,31 +239,11 @@ module.exports = {
           path: "spareparts.sparepartId",
           select: "name price",
         })
-        .sort({ chooseTime: -1, chooseDate: 1 })
+        .sort({ queueNumber: 1, timestamp: 1 })
         .exec();
 
-      const sortedTransactions = [];
-
-      let currentTransactionDate = null;
-      let currentTransactionTime = null;
-
-      for (const transaction of transactions) {
-        if (
-          currentTransactionDate !== transaction.chooseDate ||
-          currentTransactionTime !== transaction.chooseTime
-        ) {
-          currentTransactionDate = transaction.chooseDate;
-          currentTransactionTime = transaction.chooseTime;
-          sortedTransactions.push([transaction]);
-        } else {
-          sortedTransactions[sortedTransactions.length - 1].push(transaction);
-        }
-      }
-
-      const flattenedTransactions = sortedTransactions.flat();
-
-      res.render("admin/secondtransaction/view_transaction", {
-        transaction: flattenedTransactions,
+      res.render("admin/transaction/view_transaction", {
+        transactions,
         alert,
         name: req.session.user.name,
         title: "Halaman Transaksi",
