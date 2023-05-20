@@ -17,7 +17,7 @@ style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
       <td><%= category[i].name %></td>
       <td><%= formatRupiah(category[i].price) %></td>
       <td>
-        <form
+        <!-- <form
           action="/category/delete/<%= category[i]._id %>?_method=DELETE"
           method="POST"
         >
@@ -32,7 +32,7 @@ style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
             <i class="fas fa-trash"></i>
             Hapus
           </button>
-        </form>
+        </form> -->
       </td>
     </tr>
     <% } %>
