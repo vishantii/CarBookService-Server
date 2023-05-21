@@ -35,9 +35,9 @@ module.exports = {
   },
   actionCreate: async (req, res) => {
     try {
-      const { make, model, category, year } = req.body;
+      const { Make, Model, Category, Year, objectId } = req.body;
 
-      let carmakes = await Carmake({ make, model, category, year });
+      let carmakes = await Carmake({ Make, Model, Category, Year, objectId });
       await carmakes.save();
 
       req.flash("alertMessage", "Berhasil tambah kategori");
@@ -55,10 +55,10 @@ module.exports = {
     try {
       const { id } = req.params;
 
-      const category = await Carmake.findOne({ _id: id });
+      const carMake = await Carmake.findOne({ _id: id });
 
       res.render("admin/carmake/edit", {
-        category,
+        carMake,
         name: req.session.user.name,
         title: "Halaman ubah carmake",
       });
@@ -72,13 +72,13 @@ module.exports = {
   actionEdit: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name } = req.body;
+      const { Make, Model, Category, Year, objectId } = req.body;
 
       await Carmake.findOneAndUpdate(
         {
           _id: id,
         },
-        { name }
+        { Make, Model, Category, Year, objectId }
       );
 
       req.flash("alertMessage", "Berhasil ubah kategori");

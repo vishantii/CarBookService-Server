@@ -257,6 +257,9 @@ module.exports = {
   },
 
   checkout: async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
       const {
         cars,
@@ -269,14 +272,15 @@ module.exports = {
         total,
       } = req.body;
 
-      const slot = await Slot.findOne({ date: chooseDate });
+      const slot = await Slot.findOne({ date: chooseDate }, null, { session });
 
-      const chosenCategory = await Category.findById(category.id);
+      const chosenCategory = await Category.findById(category.id).session(
+        session
+      );
       if (!chosenCategory) {
         return res.status(400).json({ message: "Invalid category" });
       }
 
-      // Determine the reserved slots property to update based on the chosen category
       let reservedSlots;
       let totalSlots;
       if (chosenCategory.name === "Servis Ringan") {
@@ -289,7 +293,6 @@ module.exports = {
         return res.status(400).json({ message: "Invalid category" });
       }
 
-      // Check if there is enough available slots for the chosen category
       if (!slot || slot[reservedSlots] >= slot[totalSlots]) {
         return res.status(400).json({ message: "Booking slot is full" });
       }
@@ -298,7 +301,6 @@ module.exports = {
       const randomNum = Math.floor(Math.random() * 1000000) + 1;
       const bookingNum = timestamp + randomNum;
 
-      // Update the payload to exclude chooseTime and include bookingNumber and queueNumber
       const payload = {
         cars: cars,
         category: category,
@@ -315,27 +317,26 @@ module.exports = {
         })),
       };
 
-      // Retrieve all transactions with the same chooseDate and category to compare for FCFS and service priority
-      const transactions = await Transaction.find({
-        chooseDate: chooseDate,
-        "category.id": category.id,
-      });
+      const transactions = await Transaction.find(
+        {
+          chooseDate: chooseDate,
+          "category.id": category.id,
+        },
+        null,
+        { session }
+      )
+        .sort({ timestamp: 1 })
+        .session(session);
 
-      // Sort transactions based on timestamp (earliest first)
-      transactions.sort((a, b) => a.timestamp - b.timestamp);
-
-      // Calculate the queue number based on FCFS for transactions with the same chooseDate and category
       payload.queueNumber = transactions.length + 1;
 
       const transaction = new Transaction(payload);
 
-      // Update the quantity of each sparepart in the database
       for (const sparepart of spareparts) {
         if (sparepart && sparepart.sparepartId && sparepart.quantity) {
-          // Check if sparepart object is defined and has sparepartId and quantity properties
           const foundSparepart = await Sparepart.findById(
             sparepart.sparepartId
-          );
+          ).session(session);
           if (!foundSparepart) {
             throw new Error(
               `Sparepart with id ${sparepart.sparepartId} not found`
@@ -346,17 +347,20 @@ module.exports = {
         }
       }
 
-      // Increment the reservedSlots for the chosen category on the chosen date
       slot[reservedSlots] += 1;
       await slot.save();
 
-      await transaction.save();
+      await transaction.save({ session });
+      await session.commitTransaction();
 
       res.status(200).json({
         data: transaction,
       });
     } catch (err) {
+      await session.abortTransaction();
       res.status(500).json({ message: err.message || `Internal server error` });
+    } finally {
+      session.endSession();
     }
   },
 

@@ -6,6 +6,10 @@ let carmakeSchema = mongoose.Schema(
       type: String,
       require: [true, "Tahun harus diiisi"],
     },
+    objectId: {
+      type: String,
+      require: [true, "Tahun harus diiisi"],
+    },
     Make: {
       type: String,
       require: [true, "Nama Mobil harus diiisi"],
