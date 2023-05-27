@@ -31,11 +31,11 @@ const createInvoicePDF = async (invoice, directoryPath, fileName) => {
 
 function generateHeader(doc) {
   doc
-    .text("Citra Saputra")
+    .text("Garasi Jogja")
     .fillColor("#444444")
     .fontSize(20)
     .fontSize(10)
-    .text("Citra Saputra.", 200, 50, { align: "right" })
+    .text("Garasi Jogja.", 200, 50, { align: "right" })
     .text("Jalan Beringin", 200, 65, { align: "right" })
     .text("Pamulang, Tangerang Selatan, 15417", 200, 80, { align: "right" })
     .moveDown();

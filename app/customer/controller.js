@@ -298,6 +298,9 @@ module.exports = {
       }
 
       const timestamp = Date.now();
+      const jakartaTime = moment(timestamp)
+        .tz("Asia/Jakarta")
+        .format("YYYY-MM-DD HH:mm:ss");
       const randomNum = Math.floor(Math.random() * 1000000) + 1;
       const bookingNum = timestamp + randomNum;
 
@@ -311,6 +314,7 @@ module.exports = {
         userId: req.customer._id,
         bookingNumber: bookingNum,
         total: total,
+        timestamp: jakartaTime,
         spareparts: spareparts.map((sparepart) => ({
           sparepartId: mongoose.Types.ObjectId(sparepart.sparepartId),
           quantity: sparepart.quantity,

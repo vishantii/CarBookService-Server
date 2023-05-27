@@ -280,9 +280,29 @@ module.exports = {
         }
       }
 
+      const transaction = await Transaction.findById(id);
+
+      if (status === "1") {
+        // Check if there are any earlier transactions on the same date with lower queue numbers and status not equal to 3 or 4
+        const earlierTransactions = await Transaction.find({
+          chooseDate: transaction.chooseDate,
+          queueNumber: { $lt: transaction.queueNumber },
+          $and: [{ status: { $ne: 3 } }, { status: { $ne: 4 } }],
+        }).sort({ queueNumber: 1 });
+
+        if (earlierTransactions.length > 0) {
+          req.flash(
+            "alertMessage",
+            "Tidak dapat mengubah status transaksi saat ini. Harap selesaikan transaksi dengan nomor antrian yang lebih rendah terlebih dahulu."
+          );
+          req.flash("alertStatus", "danger");
+          return res.redirect("/transaction");
+        }
+      }
+
       await Transaction.findByIdAndUpdate({ _id: id }, { status });
 
-      req.flash("alertMessage", `Berhasil ubah status`);
+      req.flash("alertMessage", "Berhasil ubah status");
       req.flash("alertStatus", "success");
       res.redirect("/transaction");
     } catch (err) {

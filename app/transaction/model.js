@@ -34,6 +34,9 @@ let transactionSchema = mongoose.Schema(
     bookingNumber: {
       type: Number,
     },
+    timestamp: {
+      type: Date,
+    },
     queueNumber: {
       type: Number,
     },

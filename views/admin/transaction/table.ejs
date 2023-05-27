@@ -7,6 +7,7 @@ style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
       <th>Nama Customer</th>
       <th>No. HP Customer</th>
       <th>Nomor Booking</th>
+      <th>Waktu Booking</th>
       <th>Merek Mobil</th>
       <th>Tipe Mobil</th>
       <th>Nomor Plat</th>
@@ -27,6 +28,7 @@ style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
       <td><%= transaction[i]?.userId?.name %></td>
       <td><%= transaction[i]?.userId?.phoneNumber %></td>
       <td><%= transaction[i]?.bookingNumber %></td>
+      <td><%= transaction[i]?.createdAt %></td>
       <td><%= transaction[i]?.cars?.make %></td>
       <td><%= transaction[i]?.cars?.model %></td>
       <td><%= transaction[i]?.licensePlate %></td>
