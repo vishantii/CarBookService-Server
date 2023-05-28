@@ -18,10 +18,18 @@ module.exports = {
         "category.name": "Servis Ringan", // filter based on the category name
       }).populate("userId");
 
+      const bookingNumber = req.query.bookingNumber;
       const date = req.query.date;
 
       if (date) {
         transactionQuery = transactionQuery.where({ chooseDate: date });
+      }
+
+      if (bookingNumber) {
+        transactionQuery = Transaction.find({
+          bookingNumber: bookingNumber,
+          "category.name": "Servis Ringan",
+        }).populate("userId");
       }
 
       const transaction = await transactionQuery
@@ -229,9 +237,17 @@ module.exports = {
       }).populate("userId");
 
       const date = req.query.date;
+      const bookingNumber = req.query.bookingNumber;
 
       if (date) {
         transactionQuery = transactionQuery.where({ chooseDate: date });
+      }
+
+      if (bookingNumber) {
+        transactionQuery = Transaction.find({
+          bookingNumber: bookingNumber,
+          "category.name": "Servis Berat",
+        }).populate("userId");
       }
 
       const transaction = await transactionQuery
@@ -251,10 +267,9 @@ module.exports = {
     } catch (err) {
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/transaction");
+      res.redirect("/transaction/second");
     }
   },
-
   actionStatus: async (req, res) => {
     try {
       const { id } = req.params;
@@ -286,8 +301,9 @@ module.exports = {
         // Check if there are any earlier transactions on the same date with lower queue numbers and status not equal to 3 or 4
         const earlierTransactions = await Transaction.find({
           chooseDate: transaction.chooseDate,
+          category: transaction.category,
           queueNumber: { $lt: transaction.queueNumber },
-          $and: [{ status: { $ne: 3 } }, { status: { $ne: 4 } }],
+          status: { $nin: [3, 4] },
         }).sort({ queueNumber: 1 });
 
         if (earlierTransactions.length > 0) {
@@ -296,7 +312,34 @@ module.exports = {
             "Tidak dapat mengubah status transaksi saat ini. Harap selesaikan transaksi dengan nomor antrian yang lebih rendah terlebih dahulu."
           );
           req.flash("alertStatus", "danger");
-          return res.redirect("/transaction");
+          if (transaction.category.name === "Servis Ringan") {
+            return res.redirect("/transaction");
+          } else {
+            return res.redirect("/transaction/second");
+          }
+        }
+      }
+
+      if (status === "3" || status === "4") {
+        // Check if there are any pending transactions with lower queue numbers on the same date and category
+        const pendingTransactions = await Transaction.find({
+          chooseDate: transaction.chooseDate,
+          category: transaction.category,
+          queueNumber: { $lt: transaction.queueNumber },
+          status: { $nin: [3, 4] },
+        });
+
+        if (pendingTransactions.length > 0) {
+          req.flash(
+            "alertMessage",
+            "Transaksi saat ini telah diselesaikan. Harap selesaikan transaksi dengan nomor antrian yang lebih rendah terlebih dahulu."
+          );
+          req.flash("alertStatus", "danger");
+          if (transaction.category.name === "Servis Ringan") {
+            return res.redirect("/transaction");
+          } else {
+            return res.redirect("/transaction/second");
+          }
         }
       }
 
@@ -304,11 +347,20 @@ module.exports = {
 
       req.flash("alertMessage", "Berhasil ubah status");
       req.flash("alertStatus", "success");
-      res.redirect("/transaction");
+      if (transaction.category.name === "Servis Ringan") {
+        return res.redirect("/transaction");
+      } else {
+        return res.redirect("/transaction/second");
+      }
     } catch (err) {
+      const transaction = await Transaction.findById(id);
       req.flash("alertMessage", `${err.message}`);
       req.flash("alertStatus", "danger");
-      res.redirect("/transaction");
+      if (transaction.category.name === "Servis Ringan") {
+        return res.redirect("/transaction");
+      } else {
+        return res.redirect("/transaction/second");
+      }
     }
   },
 

@@ -7,12 +7,12 @@
       <%- include ../../partials/message.ejs %>
       <div class="row mb-2">
         <div class="col-sm-6">
-          <h1>Transaksi</h1>
+          <h1>Transaksi Servis Berat</h1>
         </div>
         <div class="col-sm-6">
           <ol class="breadcrumb float-sm-right">
             <li class="breadcrumb-item"><a href="/">Home</a></li>
-            <li class="breadcrumb-item active">Transaksi</li>
+            <li class="breadcrumb-item active">Transaksi Servis Berat</li>
           </ol>
         </div>
       </div>
@@ -28,10 +28,23 @@
           <div class="card">
             <div class="p-4">
               <form action="/transaction/second" method="GET">
-                <label for="date">Choose a date:</label>
-                <input type="date" id="date" name="date" required />
-                <button class="btn btn-primary" type="submit">Filter</button>
+                <label for="date">Search By Booking Number:</label>
+                <input
+                  type="text"
+                  id="bookingNumber"
+                  name="bookingNumber"
+                  required
+                />
+                <button class="btn btn-primary" type="submit">Submit</button>
               </form>
+
+              <div class="mt-4">
+                <form action="/transaction/second" method="GET">
+                  <label for="date">Choose a date:</label>
+                  <input type="date" id="date" name="date" required />
+                  <button class="btn btn-primary" type="submit">Filter</button>
+                </form>
+              </div>
             </div>
             <!-- /.card-header -->
             <div class="card-body"><%- include ./table.ejs %></div>
