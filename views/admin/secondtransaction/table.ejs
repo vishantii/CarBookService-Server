@@ -36,11 +36,6 @@ style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
       <td><%= transaction[i]?.licensePlate %></td>
       <td>
         <% for (let j = 0; j < transaction[i].spareparts.length; j++) { %>
-        <!-- <li>
-          Id sparepart: <%= transaction[i].spareparts[j].sparepartId %> :
-          quantity : <%= transaction[i].spareparts[j].quantity %><br />
-         
-        </li> -->
         <li>
           <b> Sparepart ID </b>
           : <%= transaction[i].spareparts[j].sparepartId._id %>
@@ -117,6 +112,32 @@ style: "currency", currency: "IDR", minimumFractionDigits: 0, }); }; %>
             Check Out
           </button>
         </form>
+      </td>
+      <%} %> <% if(transaction[i].status=== 3) { %>
+      <td>
+        <form
+          target="_blank"
+          style="display: inline-block"
+          action="/transaction/invoice/<%= transaction[i]._id %>"
+          method="GET"
+        >
+          <button class="btn btn-info btn-sm" type="submit">
+            <i class="fas fa-check"></i>
+            Cetak Invoice
+          </button>
+        </form>
+      </td>
+      <%} %> <% if(transaction[i].status=== 1) { %>
+      <td>
+        <button disabled class="btn btn-info btn-sm" type="submit">
+          Menunggu User
+        </button>
+      </td>
+      <%} %> <% if(transaction[i].status=== 4) { %>
+      <td>
+        <button disabled class="btn btn-danger btn-sm" type="submit">
+          Sudah Dibatalkan
+        </button>
       </td>
       <%} %>
     </tr>
