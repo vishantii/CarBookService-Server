@@ -274,6 +274,7 @@ module.exports = {
     try {
       const { id } = req.params;
       const { status } = req.query;
+      const currentDate = moment.tz("Asia/Jakarta").format("YYYY-MM-DD");
 
       // If the status is being updated to 4, update the reserved slots
       if (status == 4) {
@@ -296,6 +297,18 @@ module.exports = {
       }
 
       const transaction = await Transaction.findById(id);
+      if (transaction.chooseDate !== currentDate) {
+        req.flash(
+          "alertMessage",
+          "Tidak dapat mengubah status transaksi. Transaksi hanya dapat diubah pada tanggal yang sama dengan tanggal saat ini."
+        );
+        req.flash("alertStatus", "danger");
+        if (transaction.category.name === "Servis Ringan") {
+          return res.redirect("/transaction");
+        } else {
+          return res.redirect("/transaction/second");
+        }
+      }
 
       if (status === "1") {
         // Check if there are any earlier transactions on the same date with lower queue numbers and status not equal to 3 or 4
