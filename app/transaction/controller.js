@@ -276,34 +276,19 @@ module.exports = {
       const { status } = req.query;
       const currentDate = moment.tz("Asia/Jakarta").format("YYYY-MM-DD");
 
-      // If the status is being updated to 4, update the reserved slots
-      if (status == 4) {
-        const transaction = await Transaction.findById(id);
-        const category = transaction.category;
-
-        if (category.name === "Servis Ringan") {
-          await Slot.updateOne(
-            { date: transaction.chooseDate },
-            { $inc: { reservedSlotsLight: -1 } },
-            { upsert: true }
-          );
-        } else if (category.name === "Servis Berat") {
-          await Slot.updateOne(
-            { date: transaction.chooseDate },
-            { $inc: { reservedSlotsHeavy: -1 } },
-            { upsert: true }
-          );
-        }
-      }
-
       const transaction = await Transaction.findById(id);
-      if (transaction.chooseDate !== currentDate) {
+      const category = transaction.category;
+
+      if (
+        transaction.chooseDate !== currentDate &&
+        category.name === "Servis Ringan"
+      ) {
         req.flash(
           "alertMessage",
           "Tidak dapat mengubah status transaksi. Transaksi hanya dapat diubah pada tanggal yang sama dengan tanggal saat ini."
         );
         req.flash("alertStatus", "danger");
-        if (transaction.category.name === "Servis Ringan") {
+        if (category.name === "Servis Ringan") {
           return res.redirect("/transaction");
         } else {
           return res.redirect("/transaction/second");
@@ -312,6 +297,33 @@ module.exports = {
 
       if (status === "1") {
         // Check if there are any earlier transactions on the same date with lower queue numbers and status not equal to 3 or 4
+        if (category.name === "Servis Berat") {
+          // Check if there are any unfinished transactions on the same date or previous dates
+          const unfinishedTransactions = await Transaction.find({
+            category: category,
+            status: { $in: [0, 1, 2] },
+            $or: [
+              { chooseDate: { $lt: transaction.chooseDate } },
+              {
+                chooseDate: transaction.chooseDate,
+                queueNumber: { $lt: transaction.queueNumber },
+              },
+            ],
+          });
+
+          if (unfinishedTransactions.length > 0) {
+            req.flash(
+              "alertMessage",
+              "Tidak dapat mengubah status transaksi saat ini. Harap selesaikan transaksi pada tanggal dan nomor antrian sebelumnya terlebih dahulu."
+            );
+            req.flash("alertStatus", "danger");
+            if (category.name === "Servis Ringan") {
+              return res.redirect("/transaction");
+            } else {
+              return res.redirect("/transaction/second");
+            }
+          }
+        }
         const earlierTransactions = await Transaction.find({
           chooseDate: transaction.chooseDate,
           category: transaction.category,
@@ -325,7 +337,7 @@ module.exports = {
             "Tidak dapat mengubah status transaksi saat ini. Harap selesaikan transaksi dengan nomor antrian yang lebih rendah terlebih dahulu."
           );
           req.flash("alertStatus", "danger");
-          if (transaction.category.name === "Servis Ringan") {
+          if (category.name === "Servis Ringan") {
             return res.redirect("/transaction");
           } else {
             return res.redirect("/transaction/second");
@@ -337,7 +349,7 @@ module.exports = {
         // Check if there are any pending transactions with lower queue numbers on the same date and category
         const pendingTransactions = await Transaction.find({
           chooseDate: transaction.chooseDate,
-          category: transaction.category,
+          category: category,
           queueNumber: { $lt: transaction.queueNumber },
           status: { $nin: [3, 4] },
         });
@@ -348,7 +360,7 @@ module.exports = {
             "Transaksi saat ini telah diselesaikan. Harap selesaikan transaksi dengan nomor antrian yang lebih rendah terlebih dahulu."
           );
           req.flash("alertStatus", "danger");
-          if (transaction.category.name === "Servis Ringan") {
+          if (category.name === "Servis Ringan") {
             return res.redirect("/transaction");
           } else {
             return res.redirect("/transaction/second");
@@ -356,11 +368,25 @@ module.exports = {
         }
       }
 
+      if (category.name === "Servis Ringan") {
+        await Slot.updateOne(
+          { date: transaction.chooseDate },
+          { $inc: { reservedSlotsLight: -1 } },
+          { upsert: true }
+        );
+      } else if (category.name === "Servis Berat") {
+        await Slot.updateOne(
+          { date: transaction.chooseDate },
+          { $inc: { reservedSlotsHeavy: -1 } },
+          { upsert: true }
+        );
+      }
+
       await Transaction.findByIdAndUpdate({ _id: id }, { status });
 
       req.flash("alertMessage", "Berhasil ubah status");
       req.flash("alertStatus", "success");
-      if (transaction.category.name === "Servis Ringan") {
+      if (category.name === "Servis Ringan") {
         return res.redirect("/transaction");
       } else {
         return res.redirect("/transaction/second");
