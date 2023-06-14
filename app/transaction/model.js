@@ -56,6 +56,10 @@ let transactionSchema = mongoose.Schema(
       enum: [0, 1, 2, 3, 4],
       default: 0,
     },
+    userIdLastModified: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+    },
   },
   { timestamps: true }
 );

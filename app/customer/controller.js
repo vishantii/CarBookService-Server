@@ -389,7 +389,6 @@ module.exports = {
           message: "Transaksi tidak dapat diubah karena sudah selesai",
         });
       }
-
       // Cek apakah slot sudah ada, jika belum generate slot baru
       let slot = await Slot.findOne({ date: newDate });
       if (!slot) {

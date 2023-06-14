@@ -20,16 +20,39 @@ module.exports = {
 
       const bookingNumber = req.query.bookingNumber;
       const date = req.query.date;
+      const viewAll = req.query.viewAll;
 
       if (date) {
         transactionQuery = transactionQuery.where({ chooseDate: date });
       }
 
       if (bookingNumber) {
-        transactionQuery = Transaction.find({
+        transactionQuery = transactionQuery.where({
           bookingNumber: bookingNumber,
+        });
+      }
+
+      if (viewAll === "" || viewAll === null) {
+        // Retrieve all transactions without filtering by date
+        transactionQuery = Transaction.find({
           "category.name": "Servis Ringan",
         }).populate("userId");
+      }
+
+      if (viewAll === "" || viewAll === null) {
+        const transaction = await transactionQuery
+          .populate({
+            path: "spareparts.sparepartId",
+            select: "name price",
+          })
+          .sort({ chooseDate: 1 })
+          .exec();
+        res.render("admin/transaction/view_transaction", {
+          transaction,
+          alert,
+          name: req.session.user.name,
+          title: "Halaman Transaksi",
+        });
       }
 
       const transaction = await transactionQuery
@@ -37,9 +60,8 @@ module.exports = {
           path: "spareparts.sparepartId",
           select: "name price",
         })
-        .sort({ queueNumber: 1, timestamp: 1 })
+        .sort({ queueNumber: 1 })
         .exec();
-
       res.render("admin/transaction/view_transaction", {
         transaction,
         alert,
@@ -238,6 +260,7 @@ module.exports = {
 
       const date = req.query.date;
       const bookingNumber = req.query.bookingNumber;
+      const viewAll = req.query.viewAll;
 
       if (date) {
         transactionQuery = transactionQuery.where({ chooseDate: date });
@@ -250,12 +273,34 @@ module.exports = {
         }).populate("userId");
       }
 
+      if (viewAll === "" || viewAll === null) {
+        // Retrieve all transactions without filtering by date
+        transactionQuery = Transaction.find({
+          "category.name": "Servis Berat",
+        }).populate("userId");
+
+        const transaction = await transactionQuery
+          .populate({
+            path: "spareparts.sparepartId",
+            select: "name price",
+          })
+          .sort({ chooseDate: 1 })
+          .exec();
+
+        res.render("admin/secondtransaction/view_transaction", {
+          transaction,
+          alert,
+          name: req.session.user.name,
+          title: "Halaman Transaksi",
+        });
+      }
+
       const transaction = await transactionQuery
         .populate({
           path: "spareparts.sparepartId",
           select: "name price",
         })
-        .sort({ queueNumber: 1, timestamp: 1 })
+        .sort({ queueNumber: 1 })
         .exec();
 
       res.render("admin/secondtransaction/view_transaction", {
@@ -346,6 +391,34 @@ module.exports = {
       }
 
       if (status === "3" || status === "4") {
+        // Check if there are any earlier transactions on the same date with lower queue numbers and status not equal to 3 or 4
+        if (category.name === "Servis Berat") {
+          // Check if there are any unfinished transactions on the same date or previous dates
+          const unfinishedTransactions = await Transaction.find({
+            category: category,
+            status: { $in: [0, 1, 2] },
+            $or: [
+              { chooseDate: { $lt: transaction.chooseDate } },
+              {
+                chooseDate: transaction.chooseDate,
+                queueNumber: { $lt: transaction.queueNumber },
+              },
+            ],
+          });
+
+          if (unfinishedTransactions.length > 0) {
+            req.flash(
+              "alertMessage",
+              "Tidak dapat mengubah status transaksi saat ini. Harap selesaikan transaksi pada tanggal dan nomor antrian sebelumnya terlebih dahulu."
+            );
+            req.flash("alertStatus", "danger");
+            if (category.name === "Servis Ringan") {
+              return res.redirect("/transaction");
+            } else {
+              return res.redirect("/transaction/second");
+            }
+          }
+        }
         // Check if there are any pending transactions with lower queue numbers on the same date and category
         const pendingTransactions = await Transaction.find({
           chooseDate: transaction.chooseDate,

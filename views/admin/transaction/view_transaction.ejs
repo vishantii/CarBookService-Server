@@ -45,6 +45,14 @@
                   <button class="btn btn-primary" type="submit">Filter</button>
                 </form>
               </div>
+
+              <div class="mt-4">
+                <form action="/transaction" method="GET">
+                  <button class="btn btn-primary" type="submit" name="viewAll">
+                    Lihat Semua Data
+                  </button>
+                </form>
+              </div>
             </div>
             <!-- /.card-header -->
             <div class="card-body"><%- include ./table.ejs %></div>
