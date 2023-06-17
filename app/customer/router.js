@@ -49,7 +49,7 @@ router.get("/history", isLoginCustomer, history);
 router.get("/history/:id/detail", isLoginCustomer, historyDetail);
 router.get("/profile", isLoginCustomer, profile);
 router.put(
-  "/profile",
+  "/profile/:id",
   isLoginCustomer,
   multer({ dest: os.tmpdir() }).single("image"),
   editProfile
