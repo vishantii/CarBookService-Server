@@ -91,7 +91,6 @@ module.exports = {
       }
 
       // Step 2: Find user and their transactions
-      const user = await Customer.findById(id);
       const transactions = await Transaction.find({ userId: id });
 
       // Step 3: Reset spare part stock and time availability for each transaction
@@ -104,14 +103,6 @@ module.exports = {
             originalSparepart.stock += sparepart.quantity;
             await originalSparepart.save();
           }
-          const schedule = await Schedule.findOne({
-            date: transaction.chooseDate,
-          });
-          const selectedTime = schedule.times.find(
-            (time) => time.time === transaction.chooseTime
-          );
-          selectedTime.available = true;
-          await schedule.save();
         }
       }
 
