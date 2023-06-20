@@ -200,7 +200,6 @@ module.exports = {
         { $set: { "times.$.available": false } }
       )
         .then((result) => {
-          console.log(`Updated ${result.nModified} documents`);
           if (result.nModified === 0) {
             res.sendStatus(404);
           } else {

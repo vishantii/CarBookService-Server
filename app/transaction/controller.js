@@ -85,8 +85,6 @@ module.exports = {
 
       const spareparts = await Sparepart.find();
 
-      console.log("transactions-->", transaction);
-
       res.render("admin/transaction/edit", {
         transaction,
         spareparts,
@@ -166,26 +164,15 @@ module.exports = {
       const index = transaction.spareparts.indexOf(sparepart);
       transaction.spareparts.splice(index, 1);
 
-      console.log("index-->", index);
-
-      console.log("DATA-->", sparepart);
-
       // Update total
       const sparepartTotal =
         parseInt(sparepart.quantity) * parseInt(sparepart.sparepartId.price);
       transaction.total = parseInt(transaction.total) - sparepartTotal;
 
-      console.log("quantitiy-->", sparepart.quantity);
-      console.log("price-->", sparepart.sparepartId.price);
-      console.log("total-->", transaction.total);
-
-      console.log("sparepartTotal-->", sparepartTotal);
-
       await transaction.save();
 
       res.redirect(`/transaction/edit/${transactionId}`);
     } catch (err) {
-      console.log("err-->", err);
       res.status(500).send("Internal server error");
     }
   },
@@ -194,8 +181,6 @@ module.exports = {
     try {
       const { categoryPrice, notes } = req.body;
       const { transactionId } = req.params;
-
-      console.log("price-->", categoryPrice);
 
       // Mengambil transaksi berdasarkan ID
       const transaction = await Transaction.findById(transactionId).populate(
@@ -215,17 +200,14 @@ module.exports = {
       // Mengupdate harga total transaksi jika ada sparepart
       if (transaction.spareparts.length > 0) {
         const sparepartPrices = transaction.spareparts.map((sparepart) => {
-          console.log("sparePrice-->", sparepart);
           return (
             parseInt(sparepart.sparepartId.price) * parseInt(sparepart.quantity)
           );
         });
-        console.log("parts-->", sparepartPrices);
         const sparepartsTotal = sparepartPrices.reduce(
           (acc, curr) => acc + curr,
           0
         );
-        console.log("final-->", sparepartsTotal);
         total += sparepartsTotal;
       }
 
@@ -319,54 +301,35 @@ module.exports = {
     try {
       const { id } = req.params;
       const { status } = req.query;
-      const currentDate = moment.tz("Asia/Jakarta").format("YYYY-MM-DD");
 
       const transaction = await Transaction.findById(id);
       const category = transaction.category;
 
-      if (
-        transaction.chooseDate !== currentDate &&
-        category.name === "Servis Ringan"
-      ) {
-        req.flash(
-          "alertMessage",
-          "Tidak dapat mengubah status transaksi. Transaksi hanya dapat diubah pada tanggal yang sama dengan tanggal saat ini."
-        );
-        req.flash("alertStatus", "danger");
-        if (category.name === "Servis Ringan") {
-          return res.redirect("/transaction");
-        } else {
-          return res.redirect("/transaction/second");
-        }
-      }
-
       if (status === "1") {
         // Check if there are any earlier transactions on the same date with lower queue numbers and status not equal to 3 or 4
-        if (category.name === "Servis Berat") {
-          // Check if there are any unfinished transactions on the same date or previous dates
-          const unfinishedTransactions = await Transaction.find({
-            category: category,
-            status: { $in: [0, 1, 2] },
-            $or: [
-              { chooseDate: { $lt: transaction.chooseDate } },
-              {
-                chooseDate: transaction.chooseDate,
-                queueNumber: { $lt: transaction.queueNumber },
-              },
-            ],
-          });
+        // Check if there are any unfinished transactions on the same date or previous dates
+        const unfinishedTransactions = await Transaction.find({
+          category: category,
+          status: { $in: [0, 1, 2] },
+          $or: [
+            { chooseDate: { $lt: transaction.chooseDate } },
+            {
+              chooseDate: transaction.chooseDate,
+              queueNumber: { $lt: transaction.queueNumber },
+            },
+          ],
+        });
 
-          if (unfinishedTransactions.length > 0) {
-            req.flash(
-              "alertMessage",
-              "Tidak dapat mengubah status transaksi saat ini. Harap selesaikan transaksi pada tanggal dan nomor antrian sebelumnya terlebih dahulu."
-            );
-            req.flash("alertStatus", "danger");
-            if (category.name === "Servis Ringan") {
-              return res.redirect("/transaction");
-            } else {
-              return res.redirect("/transaction/second");
-            }
+        if (unfinishedTransactions.length > 0) {
+          req.flash(
+            "alertMessage",
+            "Tidak dapat mengubah status transaksi saat ini. Harap selesaikan transaksi pada tanggal dan nomor antrian sebelumnya terlebih dahulu."
+          );
+          req.flash("alertStatus", "danger");
+          if (category.name === "Servis Ringan") {
+            return res.redirect("/transaction");
+          } else {
+            return res.redirect("/transaction/second");
           }
         }
         const earlierTransactions = await Transaction.find({
@@ -392,31 +355,30 @@ module.exports = {
 
       if (status === "3" || status === "4") {
         // Check if there are any earlier transactions on the same date with lower queue numbers and status not equal to 3 or 4
-        if (category.name === "Servis Berat") {
-          // Check if there are any unfinished transactions on the same date or previous dates
-          const unfinishedTransactions = await Transaction.find({
-            category: category,
-            status: { $in: [0, 1, 2] },
-            $or: [
-              { chooseDate: { $lt: transaction.chooseDate } },
-              {
-                chooseDate: transaction.chooseDate,
-                queueNumber: { $lt: transaction.queueNumber },
-              },
-            ],
-          });
 
-          if (unfinishedTransactions.length > 0) {
-            req.flash(
-              "alertMessage",
-              "Tidak dapat mengubah status transaksi saat ini. Harap selesaikan transaksi pada tanggal dan nomor antrian sebelumnya terlebih dahulu."
-            );
-            req.flash("alertStatus", "danger");
-            if (category.name === "Servis Ringan") {
-              return res.redirect("/transaction");
-            } else {
-              return res.redirect("/transaction/second");
-            }
+        // Check if there are any unfinished transactions on the same date or previous dates
+        const unfinishedTransactions = await Transaction.find({
+          category: category,
+          status: { $in: [0, 1, 2] },
+          $or: [
+            { chooseDate: { $lt: transaction.chooseDate } },
+            {
+              chooseDate: transaction.chooseDate,
+              queueNumber: { $lt: transaction.queueNumber },
+            },
+          ],
+        });
+
+        if (unfinishedTransactions.length > 0) {
+          req.flash(
+            "alertMessage",
+            "Tidak dapat mengubah status transaksi saat ini. Harap selesaikan transaksi pada tanggal dan nomor antrian sebelumnya terlebih dahulu."
+          );
+          req.flash("alertStatus", "danger");
+          if (category.name === "Servis Ringan") {
+            return res.redirect("/transaction");
+          } else {
+            return res.redirect("/transaction/second");
           }
         }
         // Check if there are any pending transactions with lower queue numbers on the same date and category
@@ -491,39 +453,7 @@ module.exports = {
       res.redirect("/transaction");
     }
   },
-  // invoice: async (req, res) => {
-  //   // Get the transaction details from the request
-  //   const transaction = req.body;
 
-  //   // Generate a unique name for the invoice
-  //   const date = new Date();
-  //   const fileName = `invoice_${date.getTime()}.pdf`;
-  //   const directoryPath = "Utils/Invoice/files";
-
-  //   // Generate the invoice PDF using PDFKit
-  //   const doc = createInvoicePDF(transaction);
-
-  //   // Set the response headers to display the PDF in the browser
-  //   res.setHeader("Content-Type", "application/pdf");
-  //   res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
-
-  //   // Pipe the PDF document to the response stream
-  //   doc.pipe(res);
-
-  //   // End the document
-  //   doc.end();
-
-  //   // Open the PDF document in a new browser tab
-  //   const file = path.join(directoryPath, fileName);
-  //   const fileData = fs.readFileSync(file);
-  //   const base64Data = fileData.toString("base64");
-  //   const pdfUrl = "data:application/pdf;base64," + base64Data;
-  //   const script = `window.open('${pdfUrl}');`;
-  //   res.write(
-  //     `<html><head><script>${script}</script></head><body></body></html>`
-  //   );
-  //   res.end();
-  // },
   invoice: async (req, res) => {
     try {
       const transactionId = req.params.id;
@@ -536,16 +466,8 @@ module.exports = {
         })
         .populate("cars")
         .exec();
-
-      console.log(
-        "trans-->",
-        trans.spareparts.map((res) => {
-          return res.sparepartId;
-        })
-      );
       res.render("admin/invoice/invoice", { transaction: trans });
     } catch (err) {
-      console.log(err);
       res.status(500).send("Internal Server Error");
     }
   },
